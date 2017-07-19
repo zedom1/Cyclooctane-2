@@ -1304,7 +1304,11 @@ void Room::new_room(int a)
 		{
 			if(i==j) continue;
 			if( ((stab[i].pos_x-stab[j].pos_x)*(stab[i].pos_x-stab[j].pos_x)+(stab[i].pos_y-stab[j].pos_y)*(stab[i].pos_y-stab[j].pos_y))  <=3200  )
+			{
 				stab[i].reset();
+				if(a!=0)
+					stab[i].new_point();
+			}
 		}
 		for(int j=0; j<num_stone; j++)
 			if( ((stab[i].pos_x-stone[j].pos_x)*(stab[i].pos_x-stone[j].pos_x)+(stab[i].pos_y-stone[j].pos_y)*(stab[i].pos_y-stone[j].pos_y))  <=3200  )
@@ -1583,8 +1587,8 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 		}
 		else
 		{
-			setlinestyle(PS_SOLID); setlinecolor(RGB( 255 , 0 , 0 )); setfillcolor(RGB(255,0,0));
-			fillellipse(x-15,y-15,x+15,y+15);
+			setlinestyle(PS_SOLID,5); setlinecolor(RGB( 255 , 0 , 0 )); setfillcolor(RGB(255,0,0));
+			ellipse(x-15,y-15,x+15,y+15);
 		}
 	}
 	else if(mod==2|| mod==3)
@@ -2417,16 +2421,15 @@ void Stab::new_point()
 			stab[i].y=tem_stab[i].y;
 		}
 		tot+=13;
-
-//		setlinestyle(PS_SOLID, 5); 
-	//	setlinecolor(RGB(0,0,0));
-/*		polyline(stab,7);
+		setlinestyle(PS_SOLID, 5); 
+		setlinecolor(RGB(0,0,0));
+		polyline(stab,7);
 		setlinestyle(PS_SOLID, 1); 
 		setlinecolor(RGB(255,255,255));
-		setfillcolor(RGB(255,255,255));*/
+		setfillcolor(RGB(255,255,255));
 	}
-//	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,255,255));
-//	setfillcolor(RGB(255,255,255));
+	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,255,255));
+	setfillcolor(RGB(255,255,255));
 	POINT edge1[]=
 	{
 		pos_x-r,pos_y-r,
@@ -2454,7 +2457,6 @@ void Stab::reset()
 	pos_y=rand()%12+6;
 	pos_x=get_x_from_i(pos_x);
 	pos_y=get_y_from_j(pos_y);
-	new_point();
 	Vector a(pos_x-900,495-pos_y);
 	double tem=sqrt((pos_x-900)*((pos_x-900))+(pos_y-495)*(pos_y-495));
 	if(abs(tem)<1e-6)  init=0;
