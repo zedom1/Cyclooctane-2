@@ -18,14 +18,6 @@ int Monster::num_total=0;
 int num_monster_fresh=0;
 
 /////////// 全局对象 ////////////////
-////  界面对象  ////
-// HDC hdc;
-// HWND hwnd;
-// HANDLE hOut;
-// CONSOLE_SCREEN_BUFFER_INFO bInfo;
-// HPEN hPen,pen_black,big_pen,big_black_pen; 
-// HFONT hFont,hFont_title,hFont_sub_title;
-////  游戏对象  ////
 Vector temp_vector;
 Game cyclooctane,empt;
 MENU_START s1;  
@@ -269,32 +261,13 @@ bool judge_p_left_right(POINT a, POINT line1, POINT line2)
 }
 void initi()
 {
-	
 	srand(time(0));
 	initgraph(1200,800);
 	setaspectratio(0.8,0.808081);
-	// hPen= CreatePen( PS_SOLID ,5 , RGB( 255 , 0 , 0 ));
 	setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
-	//pen_black= CreatePen( PS_SOLID , 5 , RGB( 0 , 0 , 0 ));
 	setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
-	
-	//::SelectObject(hdc,GetStockObject(DC_PEN));
-	//::SelectObject(hdc,GetStockObject(DC_BRUSH));
-	
-	/*hFont=CreateFont(80,40,0,0,FW_NORMAL,false,false,false,
-		CHINESEBIG5_CHARSET, OUT_CHARACTER_PRECIS,
-		CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY,
-		FF_DECORATIVE, _T("方正姚体"));*/
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-	/*hFont_title=CreateFont(160,60,0,0,FW_NORMAL,false,false,false,
-		CHINESEBIG5_CHARSET, OUT_CHARACTER_PRECIS,
-		CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY,
-		FF_DECORATIVE, _T("微软雅黑"));*/
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-	/*hFont_sub_title=CreateFont(40,15,0,0,FW_NORMAL,false,false,false,
-		CHINESEBIG5_CHARSET, OUT_CHARACTER_PRECIS,
-		CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY,
-		FF_DECORATIVE, _T("微软雅黑"));*/
 	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
 	FSM::reset();
 }
@@ -811,9 +784,9 @@ void Game::updateWithInput()
 				{
 // 					::SelectObject(hdc,GetStockObject(DC_PEN));
 // 					::SelectObject(hdc,GetStockObject(DC_BRUSH));
-// 				//	::SetDCPenColor(hdc, RGB(0,0,0));
-// 				//	::SetDCBrushColor(hdc,RGB(0,0,0));
-// 				//	Ellipse( hdc,ben.head->pos_x-75, ben.head->pos_y-75, ben.head->pos_x+75, ben.head->pos_y+75 );
+// 					::SetDCPenColor(hdc, RGB(0,0,0));
+// 					::SetDCBrushColor(hdc,RGB(0,0,0));
+// 					Ellipse( hdc,ben.head->pos_x-75, ben.head->pos_y-75, ben.head->pos_x+75, ben.head->pos_y+75 );
 					ben.special.pos_x=ben.pos_x;
 					ben.special.pos_y=ben.pos_y;
 					ben.last_special.exist=false;
@@ -1281,12 +1254,8 @@ void Room::new_door(POINT door[], double angle)
 		door[i].x=door11[i].x;
 		door[i].y=door11[i].y;
 	}
-// 	::SelectObject(hdc,GetStockObject(DC_PEN));
-// 	::SelectObject(hdc,GetStockObject(DC_BRUSH));
-// 	::SetDCPenColor(hdc, RGB(255,0,0));
-// 	::SetDCBrushColor(hdc,RGB(255,0,0));
 	setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
-		setfillcolor(RGB( 255 , 0 , 0 ));
+	setfillcolor(RGB( 255 , 0 , 0 ));
 	fillpolygon(door , 5);
 }
 void Room::new_room(int a)
@@ -1562,17 +1531,11 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 	if(mod==1)
 	{
 		new_point(x,y,print_chara);
-// 		::SetDCPenColor(hdc, RGB(123,123,123));  //灰色
-// 		::SetDCBrushColor(hdc,RGB(123,123,123)); //灰色
-// 		::SelectObject(hdc,GetStockObject(DC_PEN));
-// 		::SelectObject(hdc,GetStockObject(DC_BRUSH));
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(123,123,123));
 		setfillcolor(RGB(123,123,123));
 		fillpolygon(print_chara ,7);
 		if(judge_cha_state==0)
 		{	
-// 			::SetDCPenColor(hdc, RGB(217,31,37)); //红色
-// 			::SetDCBrushColor(hdc,RGB(217,31,37));  //红色
 			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(217,31,37));
 			setfillcolor(RGB(217,31,37));
 			if(GetAsyncKeyState(VK_UP)<0) 
@@ -1618,8 +1581,6 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 					}
 					::line( x-18 , y-10 , x-2 , y-25 );
 					::line( x+18 , y-10 , x+2 , y-25 );
-				//	MoveToEx(hdc,x-18,y-10,NULL); LineTo(hdc,x-2,y-25);
-				//	MoveToEx(hdc,x+18,y-10,NULL);LineTo(hdc,x+2,y-25);
 				}
 				else
 				{
@@ -1682,8 +1643,6 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 					}
 					::line( x-20 , y-5 , x-8 , y-20);
 					::line( x-20 , y+5 , x-8 , y+20);
-// 					MoveToEx(hdc,x-20,y-5,NULL);LineTo(hdc,x-8,y-20);
-// 					MoveToEx(hdc,x-20,y+5,NULL);LineTo(hdc,x-8,y+20);
  				}
 				else
 				{
@@ -1716,8 +1675,6 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 					}
 					::line(x+20,y-5,x+8,y-20);
 					::line(x+20,y+5,x+8,y+20);
-// 					MoveToEx(hdc,x+20,y-5,NULL);LineTo(hdc,x+8,y-20);
-// 					MoveToEx(hdc,x+20,y+5,NULL);LineTo(hdc,x+8,y+20);
 				}
 				else
 				{
@@ -1914,15 +1871,11 @@ void Charactor::print_part_cha_new(double x,double y, POINT print_chara[])
 		{
 			::line(x-20,y-12,x-20,y+12);
 			::line(x+20,y-12,x+20,y+12);
-// 			MoveToEx(hdc,x-20,y-12,NULL);LineTo(hdc,x-20,y+12);
-// 			MoveToEx(hdc,x+20,y-12,NULL);LineTo(hdc,x+20,y+12);
 		}
 		else
 		{
 			::line(x-12,y-20,x+12,y-20);
 			::line(x-12,y+20,x+12,y+20);
-// 			MoveToEx(hdc,x-12,y-20,NULL);LineTo(hdc,x+12,y-20);
-// 			MoveToEx(hdc,x-12,y+20,NULL);LineTo(hdc,x+12,y+20);
 		}
 	}
 	return;
@@ -1941,15 +1894,11 @@ void Charactor::print_cha_line(double x, double y)
 	{   
 		::line(x-20,y-12,x-20,y+12);
 		::line(x+20,y-12,x+20,y+12);
-// 		MoveToEx(hdc,x-20,y-12,NULL);LineTo(hdc,x-20,y+12);
-// 		MoveToEx(hdc,x+20,y-12,NULL);LineTo(hdc,x+20,y+12);
 	}
 	else
 	{   
 		::line(x-12,y-20,x+12,y-20);
 		::line(x-12,y+20,x+12,y+20);
-// 		MoveToEx(hdc,x-12,y-20,NULL);LineTo(hdc,x+12,y-20);
-// 		MoveToEx(hdc,x-12,y+20,NULL);LineTo(hdc,x+12,y+20);
 	}
 }
 void Charactor::print_cha_ball(double x, double y,bool judge_old)
@@ -1963,10 +1912,6 @@ void Charactor::print_cha_ball(double x, double y,bool judge_old)
 	{
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
 		setfillcolor(RGB(0,0,0));
-// 			fillellipse(x-10,y-45,x+10,y-25);
-// 			fillellipse(x-45,y-10,x-25,y+10);
-// 			fillellipse(x-10,y+45,x+10,y+25);
-// 			fillellipse(x+45,y-10,x+25,y+10);
 	}
 	if(judge_dir==1)
 		fillellipse(x-10,y-45,x+10,y-25);
