@@ -17,7 +17,8 @@ int Bullet::num_time_count=0;
 int Monster::num_count=0;
 int Monster::num_total=0;
 int num_monster_fresh=0;
-
+int Game::coin=0;
+int Data_Base::co_coin=0;
 /////////// 全局对象 ////////////////
 Vector temp_vector;
 Game cyclooctane,empt;
@@ -31,8 +32,9 @@ CHANGE s7;
 State* FSM::current=NULL; 
 Data_Base new_data;
 Node mapp[45][45];
-IMAGE img_cha;
-
+IMAGE img_heart1 , img_heart2 , img_heart3 , img_empt , img_cha1 , img_cha2 , img_cha3;
+IMAGE img_ski1,img_ski2,img_ski3,img_ski4,img_ski5,img_ski6,img_ski_null;
+IMAGE img_coin1,img_coin2;
 /////////// 全局函数 ////////////////
 int normalize_x(double x)  //找到坐标所在方格的中心点x坐标
 {
@@ -271,6 +273,19 @@ void initi()
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
 	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	loadimage(&img_heart1,_T("heart1.bmp"),40,40);
+	loadimage(&img_heart2,_T("heart2.bmp"),40,40);
+	loadimage(&img_heart3,_T("heart3.bmp"),40,40);
+	loadimage(&img_ski1,_T("bullet.bmp"),100,100);
+	loadimage(&img_ski2,_T("rotate.bmp"),100,100);
+	loadimage(&img_ski3,_T("laser2.bmp"),100,100);
+	loadimage(&img_ski4,_T("laser1.bmp"),100,100);
+	loadimage(&img_ski5,_T("boom.bmp"),100,100);
+	loadimage(&img_ski6,_T("eater.bmp"),100,100);
+	loadimage(&img_ski_null,_T("null.bmp"),100,100);
+	loadimage(&img_coin1,_T("coin.bmp"),70,70);
+	loadimage(&img_coin2,_T("soul.bmp"),70,70);
+	getimage(&img_empt,0  , 760,225 ,40);
 	FSM::reset();
 }
 
@@ -422,7 +437,90 @@ void Game::show()
 	} 
 	for(int i=0; i<room.num_stone; i++)
 		room.stone[i].print_now(square.angle);
+	int x=150,y=200,co=0;
+	//  print life  //
+	putimage(x,y,&img_empt);
+	for(int i=1; i<=ben.life_now/2; i++)
+	{
+		putimage(x,y,&img_heart1);
+		x+=45; 
+		co++;
+	}
+	if(ben.life_now%2==1)
+	{
+		putimage(x,y,&img_heart2);
+		x+=45;
+		co++;
+	}
+	for(int i=0; i<ben.life/2-co; i++)
+	{
+		putimage(x,y,&img_heart3);
+		x+=45;
+	}
+	LOGFONT f;
+	gettextstyle(&f); 
+	f.lfHeight = 40;  
+	f.lfWidth=25;
+	_tcscpy(f.lfFaceName, _T("黑体"));   
+	f.lfQuality = ANTIALIASED_QUALITY;  
+	settextstyle(&f);            
 
+	switch(ben.mod)
+	{
+	case 1: putimage(50,170,&img_cha1); outtextxy(170,140,_T("Benzene")); break;
+	case 2: putimage(50,170,&img_cha2); outtextxy(150,140,_T("Cyclohexadiene")); break;
+	case 3: putimage(50,170,&img_cha3); outtextxy(170,140,_T("Pyran")); break;
+	}
+	int x1=80,x2=240;
+	y=350;
+	switch(ben.ski[0])
+	{
+	case 1: putimage(x1,y,&img_ski1); break;
+	case 2: putimage(x1,y,&img_ski2); break;
+	case 3: putimage(x1,y,&img_ski3); break;
+	case 4: putimage(x1,y,&img_ski4); break;
+	case 5: putimage(x1,y,&img_ski5); break;
+	case 6: putimage(x1,y,&img_ski6); break;
+	}
+	switch(ben.ski[1])
+	{
+	case 0: putimage(x2,y,&img_ski_null); break;
+	case 1: putimage(x2,y,&img_ski1); break;
+	case 2: putimage(x2,y,&img_ski2); break;
+	case 3: putimage(x2,y,&img_ski3); break;
+	case 4: putimage(x2,y,&img_ski4); break;
+	case 5: putimage(x2,y,&img_ski5); break;
+	case 6: putimage(x2,y,&img_ski6); break;
+	}
+	setlinestyle(PS_SOLID, 5); setlinecolor(RGB(0,0,0));
+	line(x2,y,x2+100,y);
+	line(x2+100,y,x2+100,y+100);
+	line(x2+100,y+100,x2,y+100);
+	line(x2,y+100,x2,y);
+	line(x1,y,x1+100,y);
+	line(x1+100,y,x1+100,y+100);
+	line(x1+100,y+100,x1,y+100);
+	line(x1,y+100,x1,y);
+	setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,255,0));
+	if(ben.cur==0 || ben.cur==2) 
+		x=x1;
+	else
+		x=x2;
+	line(x,y,x+100,y);
+	line(x+100,y,x+100,y+100);
+	line(x+100,y+100,x,y+100);
+	line(x,y+100,x,y);
+
+	putimage(x1,y+300,&img_coin2);
+	putimage(x1,y+400,&img_coin1);
+	f.lfHeight = 35;  
+	f.lfWidth=20;
+	settextstyle(&f);   
+	TCHAR s1[10]; 
+	_stprintf(s1,_T("灵魂：%d"),death_count);
+	outtextxy(x1+100,y+320,s1);
+	_stprintf(s1,_T("金币：%d"),room_count+coin-1);
+	outtextxy(x1+100,y+420,s1);
 //	square.tester();
 //	square.paint_room_new(square.pos_x,square.pos_y,square.pos,square.angle);
 }
@@ -454,7 +552,7 @@ void Game::update_bullet()
 {
 	if(  room.time_count>=room.time_max )
 		ben.cur-=2;
-	if(ben.ski[ben.cur]==1)
+//	if(ben.ski[ben.cur]==1)
 	{
 		if(ben.last!=ben.head)
 		{
@@ -484,7 +582,10 @@ void Game::update_bullet()
 								if(room.monster[i].num_edge<3)
 								{	
 									room.monster[i].exist=false;
-									death_count++;
+									if(room.monster[i].special==0)
+										death_count++;
+									else
+										death_count+=3;
 									Monster::num_total--;
 								}
 								if(room.monster[i].exist!=false)
@@ -542,7 +643,10 @@ void Game::update_bullet()
 							if(room.monster[j].num_edge<3)
 							{	
 								room.monster[j].exist=false;
-								death_count++;
+								if(room.monster[j].special==0)
+									death_count++;
+								else
+									death_count+=3;
 								Monster::num_total--;
 							}
 							if(room.monster[j].exist!=false)
@@ -585,7 +689,10 @@ void Game::update_bullet()
 							room.monster[j].exist=false;
 							Monster::num_total--;
 							//printf("1111\n");
-							death_count++;
+							if(room.monster[j].special==0)
+								death_count++;
+							else
+								death_count+=3;
 							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 							if(Bullet::num_time_count==3)
 							{
@@ -689,7 +796,10 @@ void Game::update_bullet()
 						ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
 						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 						room.monster[i].exist=false;
-						death_count++;
+						if(room.monster[i].special==0)
+							death_count++;
+						else
+							death_count+=3;
 						Monster::num_total--;
 						bomb_hurt(1);
 						break;
@@ -712,7 +822,10 @@ void Game::update_bullet()
 				{	
 					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 					room.monster[i].exist=false;
-					death_count++;
+					if(room.monster[i].special==0)
+						death_count++;
+					else
+						death_count+=3;
 					Monster::num_total--;
 					ben.special.r+=7;
 					ben.special.speed-=2;
@@ -753,6 +866,36 @@ void Game::updateWithInput()
 		char order=_getch();
 		if(order=='q')
 		{
+			{
+				if(ben.last!=ben.head)
+				{
+					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
+					ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+					ben.head->exist=false;
+					while(bul!=NULL)
+					{
+						bul->exist=false;
+						{
+							bul->print_bul_old(bul->pos_x,bul->pos_y);
+							if(bul->nex!=NULL)
+							{	
+								pre_bul->nex=bul->nex;
+								if(bul!=NULL)
+									delete bul;
+								bul=pre_bul->nex;
+								continue;
+							}
+						}
+						pre_bul=pre_bul->nex;
+						bul=bul->nex;
+					}
+				}
+				if(ben.head->nex==NULL)
+				{	
+					ben.head->nex=ben.last;
+					ben.last->nex=NULL;
+				}
+			}
 			if(ben.ski[1-ben.cur]==0) return;
 			else ben.cur=1-ben.cur;
 			if(ben.ski[ben.cur]==2)
@@ -761,10 +904,10 @@ void Game::updateWithInput()
 				{	
 					if(room.monster[i].exist=false) continue; 
 					room.monster[i].exist=false;
-					death_count++;
 					Monster::num_total--;
 					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				}
+				ben.num_count[2]++;
 			}
 			if(ben.ski[ben.cur]==5)
 			{
@@ -927,7 +1070,6 @@ void Game::judge_coll_mon_to_wall()
 			if( ( (room.monster[i].pos_x-square.pos_x)*(room.monster[i].pos_x-square.pos_x)  )+( (room.monster[i].pos_y-square.pos_y)*(room.monster[i].pos_y-square.pos_y) )>=350*350*2  )
 			{	
 				room.monster[i].exist=false;
-				death_count++;
 				Monster::num_total--;
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 			}
@@ -951,6 +1093,17 @@ void Game::judge_coll_cha_to_mon()
 				{
 					ben.judge_hurt++;
 					ben.life_now--;
+					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+					room.monster[i].num_edge--;
+					if(room.monster[i].num_edge<3)
+					{	
+						room.monster[i].exist=false;
+						if(room.monster[i].special==1)
+							death_count+=10;
+						Monster::num_total--;
+					}
+					if(room.monster[i].exist!=false)
+						room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				}
 			}
 		}
@@ -1042,8 +1195,14 @@ void Game::judge_coll_mon_to_obstacle()
 				room.monster[i].num_edge--;
 				if(room.monster[i].num_edge<3)
 				{	
+					if(ben.cur==2 || ben.cur==3 || ben.ski[ben.cur]==2)
+					{
+						if(room.monster[i].special==0)
+							death_count+=2;
+						else
+							death_count+=5;
+					}
 					room.monster[i].exist=false;
-					death_count++;
 					Monster::num_total--;
 				}
 				if(room.monster[i].exist!=false)
@@ -1122,8 +1281,9 @@ void Game::fresh_room()
 {
 	if(room.time_count==room.time_max) 
 	{	
-		if(ben.ski[ben.cur]!=6)
+		
 /*		if( !(ben.mod==3&&ben.judge_cha_state==1) )*/
+		if(ben.ski[ben.cur]!=6)
 			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
 		ben.special.print_bul_old(ben.special.pos_x,ben.special.pos_y);
 	}
@@ -1140,7 +1300,11 @@ void Game::fresh_room()
 			Monster::num_count=0;
 			Game::clear();
 			room.new_room(room_count);
-			room_count++;
+			if(  ben.num_count[2]>2  )
+				room_count+=0;
+			else
+				room_count++;
+			ben.num_count[2]=0;
 			judge_update=0;
 			ben.print_cha_old(ben.pos_x,ben.pos_y,ben.print_chara);
 			ben.pos_x=2*square.pos_x-ben.pos_x;
@@ -1148,6 +1312,38 @@ void Game::fresh_room()
 			ben.print_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
 			room.time_count=0;
 			ben.cur-=2;
+
+		//	if(ben.ski[ben.cur]==1)
+			{
+				if(ben.last!=ben.head)
+				{
+					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
+					ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+					ben.head->exist=false;
+					while(bul!=NULL)
+					{
+						bul->exist=false;
+						{
+							bul->print_bul_old(bul->pos_x,bul->pos_y);
+							if(bul->nex!=NULL)
+							{	
+								pre_bul->nex=bul->nex;
+								if(bul!=NULL)
+									delete bul;
+								bul=pre_bul->nex;
+								continue;
+							}
+						}
+						pre_bul=pre_bul->nex;
+						bul=bul->nex;
+					}
+				}
+				if(ben.head->nex==NULL)
+				{	
+					ben.head->nex=ben.last;
+					ben.last->nex=NULL;
+				}
+			}
 		}
 	}
 }
@@ -1166,7 +1362,10 @@ void Game::bomb_hurt(int mod)
 			{	
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				room.monster[i].exist=false;
-				death_count++;
+				if(room.monster[i].special==0)
+					death_count++;
+				else
+					death_count+=3;
 				Monster::num_total--;
 				continue;
 			}
@@ -1174,7 +1373,10 @@ void Game::bomb_hurt(int mod)
 			{
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				room.monster[i].exist=false;
-				death_count++;
+				if(room.monster[i].special==0)
+					death_count++;
+				else
+					death_count+=3;
 				Monster::num_total--;
 			}
 		}
@@ -1201,7 +1403,10 @@ void Game::bomb_hurt(int mod)
 			{	
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				room.monster[i].exist=false;
-				death_count++;
+				if(room.monster[i].special==0)
+					death_count++;
+				else
+					death_count+=3;
 				Monster::num_total--;
 				continue;
 			}
@@ -1209,7 +1414,10 @@ void Game::bomb_hurt(int mod)
 			{
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				room.monster[i].exist=false;
-				death_count++;
+				if(room.monster[i].special==0)
+					death_count++;
+				else
+					death_count+=3;
 				Monster::num_total--;
 			}
 		}
@@ -1927,7 +2135,8 @@ void Charactor::set_new_data(int md)
 	judge_dir=1;
 	num_line_array=0;
 	memset(ski,0,sizeof(ski));
-	ski[0]=ski[1]=1;
+	ski[0]=1;
+	ski[1]=2;
 	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
@@ -1952,19 +2161,19 @@ void Charactor::set_new_data(int md)
 	if(md==1)
 	{
 		mod=1;
-		strcpy_s(name,"Cyclohexadiene");
+//		strcpy_s(name,"Benzene");
 	}
 	if(md==2)
 	{
 		mod=2;
-		strcpy_s(name,"Cyclohexadiene");
+//		strcpy_s(name,"Cyclohexadiene");
 		speed=14;
 	}
 	if(md==3)
 	{
 		mod=3;
 		life_now=life=12;
-		strcpy_s(name,"Pyran");
+//		strcpy_s(name,"Pyran");
 	}
 }
 void Charactor::update()
@@ -2099,12 +2308,14 @@ void Square::judge_input( int ski)
 	if(  ski==0 || ski==2 )
 	if((GetAsyncKeyState(VK_LEFT)<0)||(GetAsyncKeyState(VK_RIGHT)<0))
 	{
-		cyclooctane.room.new_door(cyclooctane.room.door,angle,0);
+		if(ski==0)
+			cyclooctane.room.new_door(cyclooctane.room.door,angle,0);
 		paint_room_old(pos_x,pos_y,pos,angle);
 		if(GetAsyncKeyState(VK_LEFT)<0) angle+=speed/100;
 		if(GetAsyncKeyState(VK_RIGHT)<0) angle-=speed/100;
 		paint_room_new(pos_x,pos_y,pos,angle);
-		cyclooctane.room.new_door(cyclooctane.room.door,angle,1);
+		if(ski==0)
+			cyclooctane.room.new_door(cyclooctane.room.door,angle,1);
 	}
 	return;
 }
@@ -2565,24 +2776,36 @@ void MENU_START::eventt()
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(123,123,123));
 	setfillcolor(RGB(123,123,123));
 
-	POINT sqr_now[]={ 650,500, 855,500,  855,583,  650,583 ,  650,500 };
+	new_data.co_ben.set_new_data(new_data.co_ben.mod);
+	new_data.co_ben.mod=1;
+	new_data.co_ben.print_cha_new(500,850,new_data.co_ben.print_chara);
+	getimage(&img_cha1, 500-40  , 850-40 ,80 ,80);
+	new_data.co_ben.mod=2;
+	new_data.co_ben.print_cha_new(750,850,new_data.co_ben.print_chara);
+	getimage(&img_cha2, 750-40  , 850-40 ,80 ,80);
+	new_data.co_ben.mod=3;
+	new_data.co_ben.print_cha_new(1000,850,new_data.co_ben.print_chara);
+	getimage(&img_cha3, 1000-40  , 850-45 ,80 ,85);
+
+	POINT sqr_now[]={ 650,450, 855,450,  855,533,  650,533 ,  650,450 };
 	while(1)	
 	{
 		BeginBatchDraw();
-
+		putimage( 500-40  , 850-40 , &img_cha1);
+		putimage( 750-40  , 850-40 , &img_cha2);
+		putimage( 1000-40  , 850-45 , &img_cha3);
 		setbkcolor(RGB(0,0,0));
 		settextcolor(RGB(255,255,255));
-
 		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(380,200,str_title);
+		outtextxy(380,150,str_title);
 		settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(1130,295,str_version);
+		outtextxy(1130,245,str_version);
 		settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(850,380,str_sub_title);
+		outtextxy(850,330,str_sub_title);
 		settextstyle(80,40,_T("Agency FB"));  settextcolor(RGB(255,255,255));
-		outtextxy(655,500,str_start);
-		outtextxy(665,600,str_load);
-		outtextxy(680,700,str_exit);
+		outtextxy(655,450,str_start);
+		outtextxy(665,580,str_load);
+		outtextxy(680,710,str_exit);
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		polyline(sqr_now, 5);
 		FlushBatchDraw();
@@ -2599,7 +2822,7 @@ void MENU_START::eventt()
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		if(gamestatus==1)
 		{
-			POINT sqr_a[]={ 650,500, 855,500,  855,583,  650,583 ,  650,500 };
+			POINT sqr_a[]={ 650,450, 855,450,  855,533,  650,533 ,  650,450 };
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
@@ -2608,7 +2831,7 @@ void MENU_START::eventt()
 		}
 		else if(gamestatus==2)
 		{
-			POINT sqr_a[]={ 655,600, 850,600, 850,683,  655,683 , 655,600 };
+			POINT sqr_a[]={ 655,580, 850,580, 850,663,  655,663 , 655,580 };
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
@@ -2616,7 +2839,7 @@ void MENU_START::eventt()
 			}
 		}
 		else {
-			POINT sqr_a[]={ 672,700, 820,700, 820,783, 672,783 , 672,700 }; 
+			POINT sqr_a[]={ 672,710, 820,710, 820,793, 672,793 , 672,710 }; 
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
@@ -2672,8 +2895,6 @@ void MENU_CHA::eventt()
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 	setfillcolor(RGB(255,0,0));
 	fillellipse(310,790,325,800);
-	new_data.co_ben.set_new_data(new_data.co_ben.mod);
-	
 	setbkcolor(RGB(0,0,0));
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
 	outtextxy(420,150,str_title);
@@ -2681,12 +2902,9 @@ void MENU_CHA::eventt()
 	outtextxy(200,700,str_ben);
 	outtextxy(550,700,str_cyc);
 	outtextxy(1120,700,str_pyran);
-	new_data.co_ben.mod=1;
-	new_data.co_ben.print_cha_new(320,620,new_data.co_ben.print_chara);
-	new_data.co_ben.mod=2;
-	new_data.co_ben.print_cha_new(770,620,new_data.co_ben.print_chara);
-	new_data.co_ben.mod=3;
-	new_data.co_ben.print_cha_new(1200,620,new_data.co_ben.print_chara);
+	putimage(320-40  , 620-40 ,&img_cha1);
+	putimage(770-40  , 620-40 ,&img_cha2);
+	putimage(1200-40  , 620-45 ,&img_cha3);
 	FlushBatchDraw();
 	while(1)	
 	{
@@ -2726,8 +2944,6 @@ void MENU_CHA::eventt()
 	EndBatchDraw();
 	new_data.co_ben.mod=tem_mod;
 	new_data.co_ben.set_new_data(new_data.co_ben.mod);
-	//cyclooctane.ben.mod=tem_mod;
-	//cyclooctane.ben.set_new_data();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 }
@@ -2900,21 +3116,9 @@ void MENU_DEAD::eventt()
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 	setfillcolor(RGB(255,0,0));
 	fillellipse(610,615,620,625);
-	int co_score=new_data.co_room_count,cc=0; char co_ch[100],ch[100];
-	if(new_data.co_room_count==0)
-	{ch[0]='0'; cc=1;}
-	else
-	{
-		while(co_score)
-		{
-			co_ch[cc++]=(co_score%10+'0');
-			co_score/=10;
-		}
-		for(int i=0; i<cc; i++)
-			ch[cc-i-1]=co_ch[i];
-	}
-	wchar_t *str_sc = new wchar_t[cc];
-	MultiByteToWideChar(0,0,ch,-1,str_sc,cc);
+	int co_score=new_data.co_room_count; 
+	TCHAR str_sc[10];
+	_stprintf(str_sc,_T("%d"),co_score);
 	while(1)	
 	{
 		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
@@ -2992,19 +3196,17 @@ void CHANGE::eventt()
 	setfillcolor(RGB(255,0,0));
 	fillellipse(310,790,325,800);
 	
-		setbkcolor(RGB(0,0,0));
-		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(530,150,str_title); 
-		settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-		outtextxy(200,700,str_ben);
-		outtextxy(550,700,str_cyc);
-		outtextxy(1120,700,str_pyran);
-		cyclooctane.ben.mod=1;
-		cyclooctane.ben.print_cha_new(320,620,cyclooctane.ben.print_chara);
-		cyclooctane.ben.mod=2;
-		cyclooctane.ben.print_cha_new(770,620,cyclooctane.ben.print_chara);
-		cyclooctane.ben.mod=3;
-		cyclooctane.ben.print_cha_new(1200,620,cyclooctane.ben.print_chara);
+	setbkcolor(RGB(0,0,0));
+	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	outtextxy(530,150,str_title); 
+	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
+	outtextxy(200,700,str_ben);
+	outtextxy(550,700,str_cyc);
+	outtextxy(1120,700,str_pyran);
+
+	putimage( 320-40  , 620-40 , &img_cha1);
+	putimage( 770-40  , 620-40 , &img_cha2);
+	putimage( 1200-40  , 620-45 , &img_cha3);
 	while(1)	
 	{
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
@@ -3099,7 +3301,7 @@ void CHANGE::eventt()
 		switch(tem_mod)
 		{
 		case 1: new_data.co_ben.life_now=new_data.co_ben.life; break;
-		case 2: new_data.co_ben.life+=3; new_data.co_ben.life_now+=3; break;
+		case 2: new_data.co_ben.life+=2; new_data.co_ben.life_now+=2; break;
 		case 3: new_data.co_ben.speed+=2; break;
 		case 4: if(new_data.co_ben.mod==1) 
 					new_data.co_ben.range+=13;
@@ -3153,6 +3355,7 @@ void Data_Base::store_data(const Game& b)
 	co_Monster_num_count=Monster::num_count;
 	co_num_monster_fresh=num_monster_fresh;
 	co_judge_update=b.judge_update;
+	co_coin=b.coin;
 	return;
 }
 void Data_Base::set_data(Game& a)
@@ -3167,6 +3370,7 @@ void Data_Base::set_data(Game& a)
 	Monster::num_count=co_Monster_num_count;
 	num_monster_fresh=co_num_monster_fresh;
 	a.judge_update=co_judge_update;
+	a.coin=co_coin;
 	return;
 }
 bool Data_Base::read_data()
@@ -3188,6 +3392,7 @@ bool Data_Base::read_data()
 	load_data.read( (char *)&co_ben,sizeof(co_ben) );
 	load_data.read( (char *)&co_square,sizeof(co_square) );
 	load_data.read( (char *)&co_room,sizeof(co_room) );
+	load_data.read( (char *)&co_coin,sizeof(co_coin) );
 	load_data.close();
 	return true;
 }
@@ -3215,6 +3420,7 @@ void Data_Base::write_data()
 	save_data.write( (char *)&co_ben,sizeof(co_ben) );
 	save_data.write( (char *)&co_square,sizeof(co_square) );
 	save_data.write( (char *)&co_room,sizeof(co_room) );
+	save_data.write( (char *)&co_coin,sizeof(co_coin) );
 	save_data.close();
 	return;
 }

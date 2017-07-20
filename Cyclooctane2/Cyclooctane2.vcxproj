@@ -82,6 +82,20 @@
     <ClCompile Include="Cyclooctane2.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="boom.bmp" />
+    <Image Include="bullet.bmp" />
+    <Image Include="coin.bmp" />
+    <Image Include="eater.bmp" />
+    <Image Include="heart1.bmp" />
+    <Image Include="heart2.bmp" />
+    <Image Include="heart3.bmp" />
+    <Image Include="laser1.bmp" />
+    <Image Include="laser2.bmp" />
+    <Image Include="null.bmp" />
+    <Image Include="rotate.bmp" />
+    <Image Include="soul.bmp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

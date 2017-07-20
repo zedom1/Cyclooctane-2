@@ -104,7 +104,7 @@ public:
 
 struct Charactor //角色
 {
-	char name[15];
+	TCHAR name[15];
 	double pos_x,pos_y;
 	//int judge_cha_state;   //  状态
 	int judge_dir; // 判断此时的常态方向
@@ -119,8 +119,8 @@ struct Charactor //角色
 	int life,life_now;
 	POINT print_chara[14];
 	int mod;
-	int ski[2]; int cur;
-	int num_count[5];
+	int ski[5]; int cur;
+	int num_count[10];
 public:
 	Charactor();
 	void print_cha_new(double x,double y,POINT print_chara[]);
@@ -235,6 +235,7 @@ struct Game
 	int room_count;
 	bool judge_update;
 	friend struct Data_Base;
+	static int coin;
 public:
 	Game();
 	void startup();
@@ -271,6 +272,7 @@ struct Data_Base
 	int co_room_count;
 	int co_Monster_num_count;
 	int current_state;
+	static int co_coin;
 	Bullet store_bul[100]; int num_store_bul;
 	~Data_Base();
 	Data_Base();
