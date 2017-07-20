@@ -449,9 +449,10 @@ void Game::updateWithoutInput()
 }
 void Game::update_bullet()
 {
-	if(  (room.time_count>=room.time_max) && ben.mod==3 && ben.judge_cha_state==1 )
+//	if(  (room.time_count>=room.time_max) && ben.mod==3 && ben.judge_cha_state==1 )
+	if(  (room.time_count>=room.time_max) || (ben.ski[ben.cur]==0)  || (ben.ski[ben.cur]==2) )
 		return ;
-	if(ben.mod==1)
+	if(ben.ski[ben.cur]==1)
 	{
 		if(ben.last!=ben.head)
 		{
@@ -510,7 +511,7 @@ void Game::update_bullet()
 			ben.last->nex=NULL;
 		}
 	}
-	if(ben.mod==2&& ( ben.judge_cha_state==0||ben.judge_cha_state==1))
+	if(ben.ski[ben.cur]==3 || ben.ski[ben.cur]==4)
 	{
 		if(ben.line.exist==false&&Bullet::num_time_count!=3) return;
 		ben.line=ben.last_line;
@@ -518,14 +519,14 @@ void Game::update_bullet()
 		POINT tem,cut,tttem; 
 		line1_head.x=ben.line.pos_x;
 		line1_head.y=ben.line.pos_y;
-		if(ben.judge_cha_state==1)
+		if(ben.ski[ben.cur]==4)
 			ben.line_array[ben.num_line_array++]=line1_head;
 		while(ben.line.life>0)
 		{
 			tem.x=line1_head.x+ben.line.life*cosf(ben.line.xita);
 			tem.y=line1_head.y-ben.line.life*sinf(ben.line.xita);
 			line1_last=tem;
-			if(ben.judge_cha_state==0)
+			if(ben.ski[ben.cur]==3)
 			{
 				for(int j=0; j<400; j++)
 				if(room.monster[j].exist==true)
@@ -614,7 +615,7 @@ void Game::update_bullet()
 				{
 					if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
 					{
-						if(ben.judge_cha_state==1)
+						if(ben.ski[ben.cur]==4)
 							ben.line_array[ben.num_line_array++]=cut;
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 						if(Bullet::num_time_count==3)
@@ -632,7 +633,7 @@ void Game::update_bullet()
 			if(i<4) continue; // 与墙壁也没发生反射 激光直射至射程最大值
 			setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 			line ( line1_head.x , line1_head.y , line1_last.x , line1_last.y );
-			if(ben.judge_cha_state==1)
+			if(ben.ski[ben.cur]==4)
 			{	
 				ben.line_array[ben.num_line_array++]=line1_last;
 				if(Bullet::num_time_count==3)
@@ -643,7 +644,7 @@ void Game::update_bullet()
 					ben.num_line_array=0;
 				}
 			}
-			if(ben.judge_cha_state==0)
+			if(ben.ski[ben.cur]==3)
 			{
 				if(Bullet::num_time_count==3)
 				{
@@ -655,71 +656,69 @@ void Game::update_bullet()
 		}
 		ben.line.life=0;
 	}
-	if(ben.mod==3)
+
+	if(ben.ski[ben.cur]==5) // bomb
 	{
-		if(ben.judge_cha_state==0) // bomb
-		{
-			if(ben.num_bul==0) return;
-			ben.head->life++;
-			if(ben.head->life==ben.range)
-			{	
-				ben.head->exist=false;
-				ben.num_bul=0;
-				ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-				bomb_hurt(1);
-			}
-			if(ben.head->exist==true)
-			{
-				if( ( (ben.head->pos_x-square.pos_x)*(ben.head->pos_x-square.pos_x)  )+( (ben.head->pos_y-square.pos_y)*(ben.head->pos_y-square.pos_y) )>=350*350*2  )
-					ben.head->exist=false;
-				ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-				ben.head->pos_x+=ben.head->speed*cosf(ben.head->xita);
-				ben.head->pos_y-=ben.head->speed*sinf(ben.head->xita);
-				ben.head->print_bul_new(ben.head->pos_x,ben.head->pos_y);
-				judge_bullet(5,8,square.pos,ben.head->pos_x, ben.head->pos_y, ben.head->xita);
-				Vector circle_up(ben.head->pos_x-ben.head->r,ben.head->pos_y-ben.head->r),circle_down(ben.head->pos_x+ben.head->r,ben.head->pos_y+ben.head->r);
-				for(int i=0; i<400; i++)
-					if(room.monster[i].exist==true)
-						if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
-						{	
-							ben.head->exist=false;
-							ben.num_bul=0;
-							ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-							room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-							room.monster[i].exist=false;
-							death_count++;
-							Monster::num_total--;
-							bomb_hurt(1);
-							break;
-						}
-			}
+		if(ben.num_bul==0) return;
+		ben.head->life++;
+		if(ben.head->life==ben.range)
+		{	
+			ben.head->exist=false;
+			ben.num_bul=0;
+			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+			bomb_hurt(1);
 		}
-		else // float
+		if(ben.head->exist==true)
 		{
-			ben.special.print_bul_new(ben.special.pos_x,ben.special.pos_y);
-			Vector circle_up(ben.special.pos_x-ben.special.r,ben.special.pos_y-ben.special.r),circle_down(ben.special.pos_x+ben.special.r,ben.special.pos_y+ben.special.r);
-			judge_bullet(5,8,square.pos,ben.special.pos_x, ben.special.pos_y, ben.special.xita);
+			if( ( (ben.head->pos_x-square.pos_x)*(ben.head->pos_x-square.pos_x)  )+( (ben.head->pos_y-square.pos_y)*(ben.head->pos_y-square.pos_y) )>=350*350*2  )
+				ben.head->exist=false;
+			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+			ben.head->pos_x+=ben.head->speed*cosf(ben.head->xita);
+			ben.head->pos_y-=ben.head->speed*sinf(ben.head->xita);
+			ben.head->print_bul_new(ben.head->pos_x,ben.head->pos_y);
+			judge_bullet(5,8,square.pos,ben.head->pos_x, ben.head->pos_y, ben.head->xita);
+			Vector circle_up(ben.head->pos_x-ben.head->r,ben.head->pos_y-ben.head->r),circle_down(ben.head->pos_x+ben.head->r,ben.head->pos_y+ben.head->r);
 			for(int i=0; i<400; i++)
 				if(room.monster[i].exist==true)
 					if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
 					{	
+						ben.head->exist=false;
+						ben.num_bul=0;
+						ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
 						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 						room.monster[i].exist=false;
 						death_count++;
 						Monster::num_total--;
-						ben.special.r+=7;
-						ben.special.speed-=2;
-						if(ben.special.r>=50)
-						{
-							ben.last_special.pos_x=ben.special.pos_x;
-							ben.last_special.pos_y=ben.special.pos_y;
-							ben.special.r=20;
-							ben.special.speed=22;
-							bomb_hurt(2);
-							break;
-						}
+						bomb_hurt(1);
+						break;
 					}
 		}
+	}
+	if(ben.ski[ben.cur]==6) // float
+	{
+		ben.special.print_bul_new(ben.special.pos_x,ben.special.pos_y);
+		Vector circle_up(ben.special.pos_x-ben.special.r,ben.special.pos_y-ben.special.r),circle_down(ben.special.pos_x+ben.special.r,ben.special.pos_y+ben.special.r);
+		judge_bullet(5,8,square.pos,ben.special.pos_x, ben.special.pos_y, ben.special.xita);
+		for(int i=0; i<400; i++)
+			if(room.monster[i].exist==true)
+				if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
+				{	
+					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+					room.monster[i].exist=false;
+					death_count++;
+					Monster::num_total--;
+					ben.special.r+=7;
+					ben.special.speed-=2;
+					if(ben.special.r>=50)
+					{
+						ben.last_special.pos_x=ben.special.pos_x;
+						ben.last_special.pos_y=ben.special.pos_y;
+						ben.special.r=20;
+						ben.special.speed=22;
+						bomb_hurt(2);
+						break;
+					}
+				}
 	}
 	return;
 }
@@ -741,63 +740,45 @@ void Game::updateWithInput()
 	}
 	if(room.time_count>=room.time_max) return;
 	ben.print_round_new(ben.pos_x, ben.pos_y,ben.print_chara);
-	square.judge_input(ben.speed*3.0/100.0,ben.judge_cha_state,ben.mod);
+	square.judge_input(ben.speed*3.0/100.0,ben.ski[ben.cur]);
 	if(_kbhit()) 
 	{	
 		char order=_getch();
 		if(order=='q')
 		{
 			clear();
-			if(ben.mod==1)
+			if(ben.ski[1-ben.cur]==0) return;
+			else ben.cur=1-ben.cur;
+			if(ben.ski[ben.cur]==2)
 			{
-				if(ben.judge_cha_state==0)
+				for(int i=0; i<Monster::num_count; i++)
 				{	
-					ben.judge_cha_state=1;
-					for(int i=0; i<Monster::num_count; i++)
-					{	
-						if(room.monster[i].exist=false) continue; 
-						room.monster[i].exist=false;
-						death_count++;
-						Monster::num_total--;
-						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-					}
-					ben.print_part_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
+					if(room.monster[i].exist=false) continue; 
+					room.monster[i].exist=false;
+					death_count++;
+					Monster::num_total--;
+					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				}
 			}
-			if(ben.mod==2)
+			if(ben.ski[ben.cur]==5)
 			{
-				ben.judge_cha_state++;
-				if(ben.judge_cha_state>2)
-					ben.judge_cha_state=0;
-				ben.print_part_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
+				ben.special.print_bul_old(ben.special.pos_x,ben.special.pos_y);
+				ben.num_bul=0;
+				ben.special.exist=false;
+				ben.special.r=5;
 			}
-			if(ben.mod==3)
+			if(ben.ski[ben.cur]==6)
 			{
-				if(ben.judge_cha_state!=0)  // float -> bomb
-				{	
-					ben.special.print_bul_old(ben.special.pos_x,ben.special.pos_y);
-					ben.num_bul=0;
-					ben.special.exist=false;
-					ben.special.r=5;
-				}
-				else  // bomb -> float 
-				{
-// 					::SelectObject(hdc,GetStockObject(DC_PEN));
-// 					::SelectObject(hdc,GetStockObject(DC_BRUSH));
-// 					::SetDCPenColor(hdc, RGB(0,0,0));
-// 					::SetDCBrushColor(hdc,RGB(0,0,0));
-// 					Ellipse( hdc,ben.head->pos_x-75, ben.head->pos_y-75, ben.head->pos_x+75, ben.head->pos_y+75 );
-					ben.special.pos_x=ben.pos_x;
-					ben.special.pos_y=ben.pos_y;
-					ben.last_special.exist=false;
-					ben.last_special.r=30;
-					ben.last_special.special=true;
-					ben.special.r=20;
-					ben.special.exist=true;
-					ben.special.special=true;
-				}
-				ben.judge_cha_state=1-ben.judge_cha_state;
+				ben.special.pos_x=ben.pos_x;
+				ben.special.pos_y=ben.pos_y;
+				ben.last_special.exist=false;
+				ben.last_special.r=30;
+				ben.last_special.special=true;
+				ben.special.r=20;
+				ben.special.exist=true;
+				ben.special.special=true;
 			}
+			ben.print_part_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
 		}
 	}
 }
@@ -1135,7 +1116,8 @@ void Game::fresh_room()
 {
 	if(room.time_count==room.time_max) 
 	{	
-		if( !(ben.mod==3&&ben.judge_cha_state==1) )
+		if(ben.ski[ben.cur]!=6)
+/*		if( !(ben.mod==3&&ben.judge_cha_state==1) )*/
 			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
 		ben.special.print_bul_old(ben.special.pos_x,ben.special.pos_y);
 	}
@@ -1167,7 +1149,7 @@ void Game::bomb_hurt(int mod)
 	{
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB( 255 , 255 , 0 ));
 		setfillcolor(RGB( 255 , 255 , 0 ));
-		ben.num_count[ben.mod]=0;
+		ben.num_count[ben.ski[ben.cur]]=0;
 		Vector circle_up(ben.head->pos_x-75,ben.head->pos_y-75),circle_down(ben.head->pos_x+75,ben.head->pos_y+75);
 		for(int i=0; i<400; i++)
 		{
@@ -1202,7 +1184,7 @@ void Game::bomb_hurt(int mod)
 	{
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB( 0 , 0 , 255 ));
 		setfillcolor(RGB( 0 , 0 , 255 ));
-		ben.num_count[ben.mod]=0;
+		ben.num_count[ben.ski[ben.cur]]=0;
 		Vector circle_up(ben.last_special.pos_x-90,ben.last_special.pos_y-90),circle_down(ben.last_special.pos_x+90,ben.last_special.pos_y+90);
 		for(int i=0; i<400; i++)
 		{
@@ -1534,7 +1516,7 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(123,123,123));
 		setfillcolor(RGB(123,123,123));
 		fillpolygon(print_chara ,7);
-		if(judge_cha_state==0)
+		if(ski[cur]!=2)
 		{	
 			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(217,31,37));
 			setfillcolor(RGB(217,31,37));
@@ -1559,9 +1541,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 		setlinestyle(PS_SOLID); setlinecolor(RGB(255,255,255));
 		setfillcolor(RGB(255,255,255));
 		print_part_cha_new(x,y,print_chara);
-		if(mod==3&&num_bul==0&&judge_cha_state==0) 
+		if(mod==3&&num_bul==0&&ski[cur]!=6) 
 			print_cha_ball(x,y,0);
-		if( !(mod==2&&judge_cha_state==2) )
+		if( !(mod==2&&ski[cur]!=3&&ski[cur]!=4) )
 			print_cha_line(x,y);
 		if(GetAsyncKeyState(VK_UP)<0) 
 		{
@@ -1569,9 +1551,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			judge_dir=1;print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if(judge_cha_state==0 || judge_cha_state==1)
+				if( ski[cur]==3 || ski[cur]==4 )
 				{
-					if(judge_cha_state==0)
+					if( ski[cur]==3 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1600,9 +1582,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if(judge_cha_state==0 || judge_cha_state==1)
+				if( ski[cur]==3 || ski[cur]==4 )
 				{
-					if(judge_cha_state==0)
+					if( ski[cur]==3 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1631,9 +1613,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if(judge_cha_state==0 || judge_cha_state==1)
+				if( ski[cur]==3 || ski[cur]==4 )
 				{
-					if(judge_cha_state==0)
+					if( ski[cur]==3 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1663,9 +1645,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if(judge_cha_state==0 || judge_cha_state==1)
+				if( ski[cur]==3 || ski[cur]==4 )
 				{
-					if(judge_cha_state==0)
+					if( ski[cur]==3 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1732,12 +1714,12 @@ void Charactor::new_point(double x,double y, POINT print_chara[])
 }
 void Charactor::print_round_new(double x,double y,POINT print_chara[])
 {
-	if( (judge_cha_state!=0&& (mod==1) ) || (judge_cha_state==2&&mod==2)  ) 
+	if(   ( ski[cur]==2 ) || ( ski[cur]==0 )  ) 
 	{ 
 		print_cha_new(pos_x,pos_y,print_chara);	 
 		return; 
 	}
-	if(Bullet::num_time_count<3 && !( mod==3 && judge_cha_state==1 )) 
+	if(Bullet::num_time_count<3 &&  ( ski[cur]!=6 ) ) 
 		return;
 	Bullet::num_time_count=0;
 	if((GetAsyncKeyState(VK_UP)<0)||(GetAsyncKeyState(VK_DOWN)<0)||(GetAsyncKeyState(VK_LEFT)<0)||(GetAsyncKeyState(VK_RIGHT)<0))
@@ -1748,35 +1730,38 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(217,31,37));
 			setfillcolor(RGB(217,31,37));
 			if(GetAsyncKeyState(VK_UP)<0) 
-			{	
 				fillellipse(x-10,y-25,x+10,y-5);
+			else if(GetAsyncKeyState(VK_DOWN)<0) 
+				fillellipse(x-10,y+5,x+10,y+25);
+			else if(GetAsyncKeyState(VK_LEFT)<0) 
+				fillellipse(x-25,y-10,x-5,y+10); 
+			else if(GetAsyncKeyState(VK_RIGHT)<0) 
+				fillellipse(x+5,y-10,x+25,y+10);
+		}
+		if(ski[cur]==1)
+		{
+			if(GetAsyncKeyState(VK_UP)<0) 
+			{	
 				last->nex=new Bullet(pos_x,pos_y-25,pi/2);
 				last=last->nex;
-				return;
 			}
-			if(GetAsyncKeyState(VK_DOWN)<0) 
+			else if(GetAsyncKeyState(VK_DOWN)<0) 
 			{	
-				fillellipse(x-10,y+5,x+10,y+25);
 				last->nex=new Bullet(pos_x,pos_y+25,pi*3/2);
 				last=last->nex;
-				return;
 			}
-			if(GetAsyncKeyState(VK_LEFT)<0) 
+			else if(GetAsyncKeyState(VK_LEFT)<0) 
 			{	
-				fillellipse(x-25,y-10,x-5,y+10); 
 				last->nex=new Bullet(pos_x-25,pos_y,pi);
 				last=last->nex;
-				return;
 			}
-			if(GetAsyncKeyState(VK_RIGHT)<0) 
+			else if(GetAsyncKeyState(VK_RIGHT)<0) 
 			{	
-				ellipse(x+5,y-10,x+25,y+10);
 				last->nex=new Bullet(pos_x+25,pos_y,0);
 				last=last->nex;
-				return;
 			}
 		}
-		if(mod==2)
+		if( ski[cur]==3 || ski[cur]==4)
 		{
 			last_line.life=line.life=range;
 			line.exist=true;
@@ -1785,57 +1770,52 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 			if(GetAsyncKeyState(VK_UP)<0) 
 			{	
 				last_line.xita=line.xita=pi/2.0;
-				return;
 			}
-			if(GetAsyncKeyState(VK_DOWN)<0) 
+			else if(GetAsyncKeyState(VK_DOWN)<0) 
 			{	
 				last_line.xita=line.xita=pi*3.0/2.0;
-				return;
 			}
-			if(GetAsyncKeyState(VK_LEFT)<0) 
+			else if(GetAsyncKeyState(VK_LEFT)<0) 
 			{	
 				last_line.xita=line.xita=pi;
-				return;
 			}
-			if(GetAsyncKeyState(VK_RIGHT)<0) 
+			else if(GetAsyncKeyState(VK_RIGHT)<0) 
 			{	
 				last_line.xita=line.xita=0.0;
-				return;
 			}
 		}
-		if(mod==3)
-		{
-			if(judge_cha_state==0)
-			{	
+		if(ski[cur]==5)
+		{	
 				
-				if(num_bul!=0 || (num_count[mod]<=1 &&num_count[mod]!=-1 )) return;
-				num_bul=1;
-				if(GetAsyncKeyState(VK_UP)<0) 
-					head=new Bullet(pos_x,pos_y-25,pi/2);
-				if(GetAsyncKeyState(VK_DOWN)<0) 
-					head=new Bullet(pos_x,pos_y+25,pi*3/2);
-				if(GetAsyncKeyState(VK_LEFT)<0) 
-					head=new Bullet(pos_x-25,pos_y,pi+0.1);
-				if(GetAsyncKeyState(VK_RIGHT)<0) 
-					head=new Bullet(pos_x+25,pos_y,0);
-			}
-			else
-			{
-				special.print_bul_old(special.pos_x,special.pos_y);
-				if(GetAsyncKeyState(VK_UP)<0) 
-					special.pos_y-=special.speed/2;
-				if(GetAsyncKeyState(VK_DOWN)<0) 
-					special.pos_y+=special.speed/2;
-				if(GetAsyncKeyState(VK_LEFT)<0) 
-					special.pos_x-=special.speed/2;
-				if(GetAsyncKeyState(VK_RIGHT)<0) 
-					special.pos_x+=special.speed/2;
-				special.print_bul_new(special.pos_x,special.pos_y);
-			}
+			if(num_bul!=0 || (num_count[ski[cur]]<=1 &&num_count[ski[cur]]!=-1 )) return;
+			num_bul=1;
+			if(GetAsyncKeyState(VK_UP)<0) 
+				head=new Bullet(pos_x,pos_y-25,pi/2);
+			if(GetAsyncKeyState(VK_DOWN)<0) 
+				head=new Bullet(pos_x,pos_y+25,pi*3/2);
+			if(GetAsyncKeyState(VK_LEFT)<0) 
+				head=new Bullet(pos_x-25,pos_y,pi+0.1);
+			if(GetAsyncKeyState(VK_RIGHT)<0) 
+				head=new Bullet(pos_x+25,pos_y,0);
+		}
+		if(ski[cur]==6)
+		{
+			special.print_bul_old(special.pos_x,special.pos_y);
+			if(GetAsyncKeyState(VK_UP)<0) 
+				special.pos_y-=special.speed/2;
+			if(GetAsyncKeyState(VK_DOWN)<0) 
+				special.pos_y+=special.speed/2;
+			if(GetAsyncKeyState(VK_LEFT)<0) 
+				special.pos_x-=special.speed/2;
+			if(GetAsyncKeyState(VK_RIGHT)<0) 
+				special.pos_x+=special.speed/2;
+			special.print_bul_new(special.pos_x,special.pos_y);
 		}
 	}
 	else
+	{
 		print_cha_new(pos_x,pos_y,print_chara);	
+	}
 	return ;
 }
 void Charactor::print_part_cha_new(double x,double y, POINT print_chara[])
@@ -1859,7 +1839,7 @@ void Charactor::print_part_cha_new(double x,double y, POINT print_chara[])
 	fillpolygon(print_chara ,7);
 	if(mod==3)
 	{
-		if(judge_cha_state==false)
+		if(ski[cur]!=6 && ski[cur]!=0 && ski[cur]!=2)
 		{
 			setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		}
@@ -1882,7 +1862,7 @@ void Charactor::print_part_cha_new(double x,double y, POINT print_chara[])
 }
 void Charactor::print_cha_line(double x, double y)
 {
-	if(judge_cha_state==false)
+	if(ski[cur]==5 || ski[cur]==3)
 	{
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 	}
@@ -1926,48 +1906,46 @@ void Charactor::set_new_data(int md)
 {
 	pos_x=1100; 
 	pos_y=680;
-	judge_cha_state=false;
+	//judge_cha_state=false;
 	judge_hurt=-1;
 	judge_dir=1;
 	num_line_array=0;
+	ski[0]=ski[1]=6;
+	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
 	memset(line_array,0,sizeof(line_array));
+	memset(name,0,sizeof(name));
 	num_count[3]=-1;
 	num_bul=0;
+	life_now=life=12;
+	range=50;  //   1: 20+5   3: 500+10   4: 550+10   5: 15+5
+	speed=10;
+	
+	special.r=30;
+	special.speed=22;
+	head=new Bullet;
+	head->exist=false;
+	last=head;
+	head->nex=NULL;
+	last=head;
+
+	special.pos_x=pos_x;
+	special.pos_y=pos_y;
 	if(md==1)
 	{
 		mod=1;
-		life_now=life=12;
-		char temp[]="Benzene";
-		for(int i=0; i<7; i++) name[i]=temp[i];name[7]='\0';
-		head=new Bullet(pos_x,pos_y,0);
-		head->exist=false;
-		last=head;
-		speed=12;
-		head->nex=NULL;
-		last=head;
-		range=20;
+		strcpy(name,"Cyclohexadiene");
 	}
 	if(md==2)
 	{
 		mod=2;
-		life_now=life=8;
-		char temp[]="Cyclohexadiene";
-		for(int i=0; i<14; i++) name[i]=temp[i];name[14]='\0';
-		range=550;
-		speed=7;
+		strcpy(name,"Cyclohexadiene");
 	}
 	if(md==3)
 	{
 		mod=3;
-		life_now=life=10;
-		char temp[]="Pyran";
-		for(int i=0; i<5; i++) name[i]=temp[i];name[5]='\0';
-		range=15;
-		speed=10;
-		special.r=30;
-		special.speed=22;
+		strcpy(name,"Pyran");
 	}
 }
 void Charactor::update()
@@ -1978,30 +1956,21 @@ void Charactor::update()
 		if(judge_hurt>20)
 			judge_hurt=-1;
 	}
-	if(mod==1)
+
+	if(ski[cur]==5 || ski[cur]==6)
 	{
-		if(judge_cha_state)  // CD
+		if(num_count[ski[cur]]==-1) return;
+		num_count[ski[cur]]++;
+		if(num_count[ski[cur]]>1)
 		{
-			num_count[mod]++;
-			if(num_count[mod]>50)
-			{
-				num_count[mod]=0;
-				judge_cha_state=0;
-			}
-		}
-	}
-	if(mod==3)
-	{
-		if(num_count[mod]==-1) return;
-		num_count[mod]++;
-		if(num_count[mod]>1)
-		{
-			num_count[mod]=-1;
+			num_count[ski[cur]]=-1;
 			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
 			setfillcolor(RGB(0,0,0));
-			if(judge_cha_state==0)
+			if(ski[cur]==5)
+			{	// 抹除爆弹的爆炸痕迹
 				fillellipse(head->pos_x-75, head->pos_y-75, head->pos_x+75,head->pos_y+75);
-			else
+			}
+			else   // 抹除食弹的爆炸痕迹
 				fillellipse( last_special.pos_x-90, last_special.pos_y-90, last_special.pos_x+90, last_special.pos_y+90);
 		}
 	}
@@ -2105,9 +2074,9 @@ Square::Square()
 	init=pi/4.0;
 	new_room_point(pos_x,pos_y,angle,pos);
 }
-void Square::judge_input(double speed,int judge_cha_state,int mod)
+void Square::judge_input(double speed , int ski)
 {
-	if(  (judge_cha_state!=0&&mod==1) || (judge_cha_state==2&&mod==2)  )
+	if(  ski==0 || ski==2 )
 	if((GetAsyncKeyState(VK_LEFT)<0)||(GetAsyncKeyState(VK_RIGHT)<0))
 	{
 		paint_room_old(pos_x,pos_y,pos,angle);
@@ -2715,8 +2684,6 @@ void MENU_CHA::eventt()
 				fillellipse(760,790,775,800);
 				fillellipse(1200,790,1215,800);
 			}
-			if(aaa=='q')
-				new_data.co_ben.judge_cha_state=1-new_data.co_ben.judge_cha_state;
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 		setfillcolor(RGB(255,0,0));
@@ -3105,10 +3072,7 @@ void CHANGE::eventt()
 					new_data.co_ben.range+=13;
 				else 	if(new_data.co_ben.mod==3) 
 				{		
-					if(new_data.co_ben.judge_cha_state==0)
-						new_data.co_ben.range+=10;
-					else
-						new_data.co_ben.head->speed+=5;
+					new_data.co_ben.head->speed+=5;
 				}
 				else
 				{
