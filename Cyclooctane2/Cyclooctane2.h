@@ -120,7 +120,7 @@ struct Charactor //角色
 	POINT print_chara[14];
 	int mod;
 	int ski[2]; int cur;
-	int num_count[7];
+	int num_count[5];
 public:
 	Charactor();
 	void print_cha_new(double x,double y,POINT print_chara[]);
@@ -194,6 +194,7 @@ struct Square
 public:
 	double pos_x,pos_y;   // 中心坐标
 	double angle,init;   //init为初始角度 ,angle为变化角度
+	double speed;
 	POINT pos[10];
 	POINT edge1[5],edge2[5],edge3[5],edge4[5];
 	POINT corner[4];
@@ -201,7 +202,7 @@ public:
 	virtual void new_room_point (double pos_x, double pos_y, double angle , POINT pos[]); //更新坐标数组
 	virtual void paint_room_new(double pos_x, double pos_y, POINT pos[], double angle); // 画新房间
 	virtual void paint_room_old(double pos_x, double pos_y, POINT pos[],double angle); //抹去旧房间
-	virtual void judge_input(double speed,int ski);   // 根据输入更新角度
+	virtual void judge_input( int ski);   // 根据输入更新角度
 //	void tester();
 };
 
@@ -219,7 +220,7 @@ public:
 	int rand_c;   //　与门位置相关的随机数
 	int time_max;//　时间上限，每个房间随机生成，但总体随闯关进行而上升
 	void new_room(int a);// 新房间
-	void new_door(POINT door[], double angle);// 生成并画门
+	void new_door(POINT door[], double angle,int mod);// 生成并画门
 	void update_monster(int x, int y, Square square);
 	void get_path(int x ,int  y, int aim_x, int aim_y, POINT &path, int special);
 	//Room operator = (const Room & a );

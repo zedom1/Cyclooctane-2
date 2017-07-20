@@ -1,6 +1,7 @@
 #include "cyclooctane2.h"
 using namespace std;
 #pragma warning(disable:4244)
+#pragma warning(disable:4305)
 
 /////////// 常量 ////////////////
 const double pi=3.1415926535;
@@ -30,6 +31,7 @@ CHANGE s7;
 State* FSM::current=NULL; 
 Data_Base new_data;
 Node mapp[45][45];
+IMAGE img_cha;
 
 /////////// 全局函数 ////////////////
 int normalize_x(double x)  //找到坐标所在方格的中心点x坐标
@@ -420,6 +422,7 @@ void Game::show()
 	} 
 	for(int i=0; i<room.num_stone; i++)
 		room.stone[i].print_now(square.angle);
+
 //	square.tester();
 //	square.paint_room_new(square.pos_x,square.pos_y,square.pos,square.angle);
 }
@@ -449,9 +452,8 @@ void Game::updateWithoutInput()
 }
 void Game::update_bullet()
 {
-//	if(  (room.time_count>=room.time_max) && ben.mod==3 && ben.judge_cha_state==1 )
-	if(  (room.time_count>=room.time_max) || (ben.ski[ben.cur]==0)  || (ben.ski[ben.cur]==2) )
-		return ;
+	if(  room.time_count>=room.time_max )
+		ben.cur-=2;
 	if(ben.ski[ben.cur]==1)
 	{
 		if(ben.last!=ben.head)
@@ -694,6 +696,11 @@ void Game::update_bullet()
 					}
 		}
 	}
+	if(  room.time_count>=room.time_max )
+	{	
+		ben.cur+=2;
+		return ;
+	}
 	if(ben.ski[ben.cur]==6) // float
 	{
 		ben.special.print_bul_new(ben.special.pos_x,ben.special.pos_y);
@@ -738,15 +745,14 @@ void Game::updateWithInput()
 			ben.pos_x=old_x+ben.speed; 
 		ben.print_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);	
 	}
+	square.judge_input(ben.ski[ben.cur]);
 	if(room.time_count>=room.time_max) return;
 	ben.print_round_new(ben.pos_x, ben.pos_y,ben.print_chara);
-	square.judge_input(ben.speed*3.0/100.0,ben.ski[ben.cur]);
 	if(_kbhit()) 
 	{	
 		char order=_getch();
 		if(order=='q')
 		{
-			clear();
 			if(ben.ski[1-ben.cur]==0) return;
 			else ben.cur=1-ben.cur;
 			if(ben.ski[ben.cur]==2)
@@ -1125,7 +1131,8 @@ void Game::fresh_room()
 	{	
 		Vector tem; double tem1;
 		square.paint_room_new(square.pos_x,square.pos_y,square.pos,square.angle);
-		room.new_door(room.door,square.angle);
+		room.new_door(room.door,square.angle,1);
+		ben.cur=ben.cur>1?ben.cur:ben.cur+2;
 		if(judge_coll_single(ben.print_chara,7,room.door,5,tem,tem1)==true   )
 		{
 			memset(room.monster,0,sizeof(room.monster));
@@ -1140,6 +1147,7 @@ void Game::fresh_room()
 			ben.pos_y=2*square.pos_y-ben.pos_y;
 			ben.print_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
 			room.time_count=0;
+			ben.cur-=2;
 		}
 	}
 }
@@ -1217,7 +1225,7 @@ Room::Room()
 	new_room(0);
 }
 Room::~Room(){}
-void Room::new_door(POINT door[], double angle)
+void Room::new_door(POINT door[], double angle, int mod)
 {
 	int squ_x=900,squ_y=495;
 	double r1=sqrt(375*375*2),r2=sqrt(350*350*2);
@@ -1236,8 +1244,16 @@ void Room::new_door(POINT door[], double angle)
 		door[i].x=door11[i].x;
 		door[i].y=door11[i].y;
 	}
-	setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
-	setfillcolor(RGB( 255 , 0 , 0 ));
+	if(mod==1)
+	{
+		setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+		setfillcolor(RGB( 255 , 0 , 0 ));
+	}
+	else
+	{
+		setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
+		setfillcolor(RGB( 0 , 0 , 0 ));
+	}
 	fillpolygon(door , 5);
 }
 void Room::new_room(int a)
@@ -1516,7 +1532,7 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(123,123,123));
 		setfillcolor(RGB(123,123,123));
 		fillpolygon(print_chara ,7);
-		if(ski[cur]!=2)
+		if(ski[cur]!=2 && ski[cur]!=0)
 		{	
 			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(217,31,37));
 			setfillcolor(RGB(217,31,37));
@@ -1543,7 +1559,7 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 		print_part_cha_new(x,y,print_chara);
 		if(mod==3&&num_bul==0&&ski[cur]!=6) 
 			print_cha_ball(x,y,0);
-		if( !(mod==2&&ski[cur]!=3&&ski[cur]!=4) )
+	//	if( (mod==2&&ski[cur]==4) || mod==3 )
 			print_cha_line(x,y);
 		if(GetAsyncKeyState(VK_UP)<0) 
 		{
@@ -1551,9 +1567,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			judge_dir=1;print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if( ski[cur]==3 || ski[cur]==4 )
-				{
-					if( ski[cur]==3 )
+				if(ski[cur]!=2 && ski[cur]!=0)
+				{	
+					if( ski[cur]!=4 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1582,9 +1598,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if( ski[cur]==3 || ski[cur]==4 )
-				{
-					if( ski[cur]==3 )
+				if(ski[cur]!=2 && ski[cur]!=0)
+				{	
+					if( ski[cur]!=4 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1613,9 +1629,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if( ski[cur]==3 || ski[cur]==4 )
-				{
-					if( ski[cur]==3 )
+				if(ski[cur]!=2 && ski[cur]!=0)
+				{	
+					if( ski[cur]!=4 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1645,9 +1661,9 @@ void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 			print_part_cha_new(x,y,print_chara);
 			if(mod==2)
 			{
-				if( ski[cur]==3 || ski[cur]==4 )
-				{
-					if( ski[cur]==3 )
+				if(ski[cur]!=2 && ski[cur]!=0)
+				{	
+					if( ski[cur]!=4 )
 					{
 						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
 					}
@@ -1862,7 +1878,7 @@ void Charactor::print_part_cha_new(double x,double y, POINT print_chara[])
 }
 void Charactor::print_cha_line(double x, double y)
 {
-	if(ski[cur]==5 || ski[cur]==3)
+	if(ski[cur]==5 || ski[cur]==3 || ski[cur]==1)
 	{
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 	}
@@ -1910,7 +1926,8 @@ void Charactor::set_new_data(int md)
 	judge_hurt=-1;
 	judge_dir=1;
 	num_line_array=0;
-	ski[0]=ski[1]=6;
+	memset(ski,0,sizeof(ski));
+	ski[0]=ski[1]=1;
 	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
@@ -1918,7 +1935,7 @@ void Charactor::set_new_data(int md)
 	memset(name,0,sizeof(name));
 	num_count[3]=-1;
 	num_bul=0;
-	life_now=life=12;
+	life_now=life=10;
 	range=50;  //   1: 20+5   3: 500+10   4: 550+10   5: 15+5
 	speed=10;
 	
@@ -1935,17 +1952,19 @@ void Charactor::set_new_data(int md)
 	if(md==1)
 	{
 		mod=1;
-		strcpy(name,"Cyclohexadiene");
+		strcpy_s(name,"Cyclohexadiene");
 	}
 	if(md==2)
 	{
 		mod=2;
-		strcpy(name,"Cyclohexadiene");
+		strcpy_s(name,"Cyclohexadiene");
+		speed=14;
 	}
 	if(md==3)
 	{
 		mod=3;
-		strcpy(name,"Pyran");
+		life_now=life=12;
+		strcpy_s(name,"Pyran");
 	}
 }
 void Charactor::update()
@@ -2072,17 +2091,20 @@ Square::Square()
 	pos_y=495;
 	angle=0.0;
 	init=pi/4.0;
+	speed=8;
 	new_room_point(pos_x,pos_y,angle,pos);
 }
-void Square::judge_input(double speed , int ski)
+void Square::judge_input( int ski)
 {
 	if(  ski==0 || ski==2 )
 	if((GetAsyncKeyState(VK_LEFT)<0)||(GetAsyncKeyState(VK_RIGHT)<0))
 	{
+		cyclooctane.room.new_door(cyclooctane.room.door,angle,0);
 		paint_room_old(pos_x,pos_y,pos,angle);
-		if(GetAsyncKeyState(VK_LEFT)<0) angle+=speed/3.0;
-		if(GetAsyncKeyState(VK_RIGHT)<0) angle-=speed/3.0;
+		if(GetAsyncKeyState(VK_LEFT)<0) angle+=speed/100;
+		if(GetAsyncKeyState(VK_RIGHT)<0) angle-=speed/100;
 		paint_room_new(pos_x,pos_y,pos,angle);
+		cyclooctane.room.new_door(cyclooctane.room.door,angle,1);
 	}
 	return;
 }
@@ -2546,6 +2568,8 @@ void MENU_START::eventt()
 	POINT sqr_now[]={ 650,500, 855,500,  855,583,  650,583 ,  650,500 };
 	while(1)	
 	{
+		BeginBatchDraw();
+
 		setbkcolor(RGB(0,0,0));
 		settextcolor(RGB(255,255,255));
 
@@ -2561,6 +2585,7 @@ void MENU_START::eventt()
 		outtextxy(680,700,str_exit);
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		polyline(sqr_now, 5);
+		FlushBatchDraw();
 		char aaa=_getch();
 		if(aaa=='\r') break;
 		if(aaa=='w'||aaa=='s')
@@ -2599,7 +2624,9 @@ void MENU_START::eventt()
 			}
 		}
 		polyline(sqr_now, 5);
+		FlushBatchDraw();
 	}
+	EndBatchDraw();
 	Game::clear();
 	if(gamestatus==1)
 	{	
@@ -2641,28 +2668,29 @@ void MENU_CHA::eventt()
 	LPCTSTR str_title=L"Charactor";
 	int gamestatus=1;
 	int tem_mod=1;
-
+	BeginBatchDraw();
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 	setfillcolor(RGB(255,0,0));
 	fillellipse(310,790,325,800);
 	new_data.co_ben.set_new_data(new_data.co_ben.mod);
 	
-		setbkcolor(RGB(0,0,0));
-		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(420,150,str_title);
-		settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-		outtextxy(200,700,str_ben);
-		outtextxy(550,700,str_cyc);
-		outtextxy(1120,700,str_pyran);
-		new_data.co_ben.mod=1;
-		new_data.co_ben.print_cha_new(320,620,new_data.co_ben.print_chara);
-		new_data.co_ben.mod=2;
-		new_data.co_ben.print_cha_new(770,620,new_data.co_ben.print_chara);
-		new_data.co_ben.mod=3;
-		new_data.co_ben.print_cha_new(1200,620,new_data.co_ben.print_chara);
+	setbkcolor(RGB(0,0,0));
+	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	outtextxy(420,150,str_title);
+	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
+	outtextxy(200,700,str_ben);
+	outtextxy(550,700,str_cyc);
+	outtextxy(1120,700,str_pyran);
+	new_data.co_ben.mod=1;
+	new_data.co_ben.print_cha_new(320,620,new_data.co_ben.print_chara);
+	new_data.co_ben.mod=2;
+	new_data.co_ben.print_cha_new(770,620,new_data.co_ben.print_chara);
+	new_data.co_ben.mod=3;
+	new_data.co_ben.print_cha_new(1200,620,new_data.co_ben.print_chara);
+	FlushBatchDraw();
 	while(1)	
 	{
-		
+		BeginBatchDraw();
 		if(GetAsyncKeyState(VK_ESCAPE)<0)
 		{	
 			gamestatus=1;
@@ -2693,7 +2721,9 @@ void MENU_CHA::eventt()
 			fillellipse(760,790,775,800);
 		else 
 			fillellipse(1200,790,1215,800);
+		FlushBatchDraw();
 	}
+	EndBatchDraw();
 	new_data.co_ben.mod=tem_mod;
 	new_data.co_ben.set_new_data(new_data.co_ben.mod);
 	//cyclooctane.ben.mod=tem_mod;
@@ -2729,6 +2759,7 @@ void ON_GAME::eventt()
 		double totaltime;
 		start=clock();
 */
+		BeginBatchDraw();
 		cyclooctane.show();   // 显示画面
 		cyclooctane.updateWithInput();    // 与输入有关的更新
 		cyclooctane.updateWithoutInput();  // 与输入无关的更新
@@ -2738,6 +2769,7 @@ void ON_GAME::eventt()
 		totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
 		cout<<"\n此程序的运行时间为"<<totaltime<<"秒！"<<endl;
 */
+		FlushBatchDraw();
 		Sleep(50);
 		if( GetAsyncKeyState(VK_ESCAPE)<0 )
 		{
@@ -2754,6 +2786,7 @@ void ON_GAME::eventt()
 		}
 
 	}
+	EndBatchDraw();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 	return;
