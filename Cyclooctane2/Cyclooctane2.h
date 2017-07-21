@@ -37,11 +37,13 @@ struct Data_Base;
 struct State;   
 struct MENU_START;
 struct MENU_CHA;
+struct MENU_SKILL;
 struct ON_GAME;
 struct MENU_PAUSE;
 struct MENU_DEAD;
 struct EXIT;
-struct MENU_CHANGE;
+struct SHOP1;
+//struct SHOP2;
 
 
 struct Node
@@ -90,6 +92,8 @@ struct Bullet
 	double speed;
 	bool special;
 	int life;
+	int cur;
+	static int	 range[10];
 	Bullet *nex;
 	
 public:
@@ -115,7 +119,6 @@ struct Charactor //½ÇÉ«
 	POINT line_array[100];
 	int num_bul,num_line_array;
 	double speed;
-	int range;
 	int life,life_now;
 	POINT print_chara[14];
 	int mod;
@@ -236,6 +239,7 @@ struct Game
 	bool judge_update;
 	friend struct Data_Base;
 	static int coin;
+	int flag;
 public:
 	Game();
 	void startup();
@@ -272,6 +276,9 @@ struct Data_Base
 	int co_room_count;
 	int co_Monster_num_count;
 	int current_state;
+	int co_flag;
+	bool on_game;
+	bool jud_skin2,jud_skin3;
 	static int co_coin;
 	Bullet store_bul[100]; int num_store_bul;
 	~Data_Base();
@@ -290,6 +297,12 @@ struct State
 };
 
 struct MENU_START:public State  
+{  
+	void eventt();
+    State* transition(int); 
+};  
+
+struct MENU_SKILL:public State  
 {  
 	void eventt();
     State* transition(int); 
@@ -325,11 +338,13 @@ struct EXIT:public State
 	void eventt();
 };  
 
-struct CHANGE:public State  
+struct SHOP1:public State  
 {
     State* transition(int);  
 	void eventt();
 };  
+
+
 
 struct FSM
 {  	

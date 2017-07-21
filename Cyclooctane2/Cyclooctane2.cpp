@@ -2,6 +2,7 @@
 using namespace std;
 #pragma warning(disable:4244)
 #pragma warning(disable:4305)
+#pragma warning(disable:4996)
 
 /////////// 常量 ////////////////
 const double pi=3.1415926535;
@@ -19,16 +20,18 @@ int Monster::num_total=0;
 int num_monster_fresh=0;
 int Game::coin=0;
 int Data_Base::co_coin=0;
+int Bullet::range[]={0,20,0,500,550,15,0};
 /////////// 全局对象 ////////////////
 Vector temp_vector;
 Game cyclooctane,empt;
-MENU_START s1;  
+MENU_START s1;
+MENU_SKILL s8;
 MENU_CHA s2;  
 ON_GAME s3;  
 MENU_PAUSE s4;  
 MENU_DEAD s5;  
 EXIT s6;
-CHANGE s7;
+SHOP1 s7;
 State* FSM::current=NULL; 
 Data_Base new_data;
 Node mapp[45][45];
@@ -278,14 +281,14 @@ void initi()
 	loadimage(&img_heart3,_T("heart3.bmp"),40,40);
 	loadimage(&img_ski1,_T("bullet.bmp"),100,100);
 	loadimage(&img_ski2,_T("rotate.bmp"),100,100);
-	loadimage(&img_ski3,_T("laser2.bmp"),100,100);
-	loadimage(&img_ski4,_T("laser1.bmp"),100,100);
+	loadimage(&img_ski3,_T("laser1.bmp"),100,100);
+	loadimage(&img_ski4,_T("laser2.bmp"),100,100);
 	loadimage(&img_ski5,_T("boom.bmp"),100,100);
 	loadimage(&img_ski6,_T("eater.bmp"),100,100);
 	loadimage(&img_ski_null,_T("null.bmp"),100,100);
 	loadimage(&img_coin1,_T("coin.bmp"),70,70);
 	loadimage(&img_coin2,_T("soul.bmp"),70,70);
-	getimage(&img_empt,0  , 760,225 ,40);
+	getimage(&img_empt, 0  , 750,225 ,50);
 	FSM::reset();
 }
 
@@ -511,16 +514,16 @@ void Game::show()
 	line(x+100,y+100,x,y+100);
 	line(x,y+100,x,y);
 
-	putimage(x1,y+300,&img_coin2);
-	putimage(x1,y+400,&img_coin1);
+	putimage(80,350+300,&img_coin2);
+	putimage(80,350+400,&img_coin1);
 	f.lfHeight = 35;  
 	f.lfWidth=20;
 	settextstyle(&f);   
 	TCHAR s1[10]; 
 	_stprintf(s1,_T("灵魂：%d"),death_count);
-	outtextxy(x1+100,y+320,s1);
+	outtextxy(80+100,350+320,s1);
 	_stprintf(s1,_T("金币：%d"),room_count+coin-1);
-	outtextxy(x1+100,y+420,s1);
+	outtextxy(80+100,350+420,s1);
 //	square.tester();
 //	square.paint_room_new(square.pos_x,square.pos_y,square.pos,square.angle);
 }
@@ -560,7 +563,7 @@ void Game::update_bullet()
 			while(bul!=NULL)
 			{
 				bul->life++;
-				if(bul->life==ben.range)
+				if(bul->life>=Bullet::range[bul->cur])
 					bul->exist=false;
 				if(bul->exist==true)
 				{
@@ -770,7 +773,7 @@ void Game::update_bullet()
 	{
 		if(ben.num_bul==0) return;
 		ben.head->life++;
-		if(ben.head->life==ben.range)
+		if(ben.head->life==Bullet::range[ben.head->cur])
 		{	
 			ben.head->exist=false;
 			ben.num_bul=0;
@@ -1968,26 +1971,31 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 			{	
 				last->nex=new Bullet(pos_x,pos_y-25,pi/2);
 				last=last->nex;
+				last->cur=ski[cur];
 			}
 			else if(GetAsyncKeyState(VK_DOWN)<0) 
 			{	
 				last->nex=new Bullet(pos_x,pos_y+25,pi*3/2);
 				last=last->nex;
+				last->cur=ski[cur];
 			}
 			else if(GetAsyncKeyState(VK_LEFT)<0) 
 			{	
 				last->nex=new Bullet(pos_x-25,pos_y,pi);
 				last=last->nex;
+				last->cur=ski[cur];
 			}
 			else if(GetAsyncKeyState(VK_RIGHT)<0) 
 			{	
 				last->nex=new Bullet(pos_x+25,pos_y,0);
 				last=last->nex;
+				last->cur=ski[cur];
 			}
 		}
 		if( ski[cur]==3 || ski[cur]==4)
 		{
-			last_line.life=line.life=range;
+			last_line.life=line.life=Bullet::range[ski[cur]];
+			last_line.cur=line.cur=ski[cur];
 			line.exist=true;
 			last_line.pos_x=line.pos_x=pos_x;
 			last_line.pos_y=line.pos_y=pos_y;
@@ -2021,6 +2029,7 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 				head=new Bullet(pos_x-25,pos_y,pi+0.1);
 			if(GetAsyncKeyState(VK_RIGHT)<0) 
 				head=new Bullet(pos_x+25,pos_y,0);
+			head->cur=ski[cur];
 		}
 		if(ski[cur]==6)
 		{
@@ -2034,6 +2043,7 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 			if(GetAsyncKeyState(VK_RIGHT)<0) 
 				special.pos_x+=special.speed/2;
 			special.print_bul_new(special.pos_x,special.pos_y);
+			special.cur=ski[cur];
 		}
 	}
 	else
@@ -2134,9 +2144,7 @@ void Charactor::set_new_data(int md)
 	judge_hurt=-1;
 	judge_dir=1;
 	num_line_array=0;
-	memset(ski,0,sizeof(ski));
-	ski[0]=1;
-	ski[1]=2;
+	ski[1]=ski[2]=ski[3]=ski[4]=0;
 	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
@@ -2145,7 +2153,7 @@ void Charactor::set_new_data(int md)
 	num_count[3]=-1;
 	num_bul=0;
 	life_now=life=10;
-	range=50;  //   1: 20+5   3: 500+10   4: 550+10   5: 15+5
+	  
 	speed=10;
 	
 	special.r=30;
@@ -2161,19 +2169,16 @@ void Charactor::set_new_data(int md)
 	if(md==1)
 	{
 		mod=1;
-//		strcpy_s(name,"Benzene");
 	}
 	if(md==2)
 	{
 		mod=2;
-//		strcpy_s(name,"Cyclohexadiene");
 		speed=14;
 	}
 	if(md==3)
 	{
 		mod=3;
 		life_now=life=12;
-//		strcpy_s(name,"Pyran");
 	}
 }
 void Charactor::update()
@@ -2330,6 +2335,7 @@ Bullet::Bullet(double x,double y,double xi)
 	exist=true;
 	life=0;
 	r=5;
+	cur=0;
 	special=false;
 }
 Bullet::Bullet()
@@ -2342,6 +2348,7 @@ Bullet::Bullet()
 	nex=NULL;
 	xita=0;
 	life=0;
+	cur=0;
 }
 void Bullet::print_bul_new(double pos_x, double pos_y)
 {
@@ -2851,21 +2858,37 @@ void MENU_START::eventt()
 	}
 	EndBatchDraw();
 	Game::clear();
+	if(new_data.read_data()==true)
+		new_data.set_data(cyclooctane);
+	else
+	{
+		new_data.fresh_data();
+	}
 	if(gamestatus==1)
 	{	
 		gamestatus=2;
+		int c1=new_data.co_flag;
+		int c2=new_data.co_coin;
+		int c3=new_data.co_ben.ski[0];
+		bool c4=new_data.jud_skin2,c5=new_data.jud_skin3;
 		new_data.fresh_data();
+		new_data.co_flag=c1;
+		new_data.co_coin=c2;
+		new_data.co_ben.ski[0]=c3;
+		new_data.jud_skin3=c5;
+		new_data.jud_skin2=c4;
 	}
 	else if(gamestatus==2)
 	{
 		gamestatus=3;
-		if(new_data.read_data()!=true)
+		if(new_data.read_data()!=true || new_data.on_game==false)
 			gamestatus=1;
-		else
+		else if(new_data.on_game==true)
 			new_data.set_data(cyclooctane);
 	}
 	else
 		gamestatus=6;
+	
 	FSM::current=transition(gamestatus);
 	return;
 }
@@ -2876,35 +2899,62 @@ State* MENU_CHA::transition(int x)
     {  
         case 1:  
             return &s1;  
-        case 3:  
-            return &s3;  
+        case 8:  
+            return &s8;  
         default:  
             return &s2;  
     }  
 }  
 void MENU_CHA::eventt()
 {
+	//new_data.co_coin=999;
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_ben=L"Benzene";
 	LPCTSTR str_cyc=L"Cyclohexadiene";
 	LPCTSTR str_pyran=L"Pyran";
 	LPCTSTR str_title=L"Charactor";
+	LPCTSTR str_lock2=L"解锁 ($20)";
+	LPCTSTR str_lock3=L"解锁 ($20)";
+	LPCTSTR str_cha3=L"life+2";
+	LPCTSTR str_cha2=L"speed+4";
 	int gamestatus=1;
 	int tem_mod=1;
 	BeginBatchDraw();
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 	setfillcolor(RGB(255,0,0));
-	fillellipse(310,790,325,800);
+	fillellipse(310,690,325,700);
 	setbkcolor(RGB(0,0,0));
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
 	outtextxy(420,150,str_title);
+	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,0,255));
+	outtextxy(690,820,str_cha2);
+	outtextxy(1140,820,str_cha3);
+	if( new_data.jud_skin2==false || new_data.jud_skin3==false )
+	{
+		LOGFONT f;
+		gettextstyle(&f); 
+		_tcscpy(f.lfFaceName, _T("黑体"));   
+		f.lfQuality = ANTIALIASED_QUALITY;  
+		f.lfHeight = 35;  
+		f.lfWidth=20;
+		settextstyle(&f);   
+		settextcolor(RGB(255,255,0));
+		TCHAR s1[10]; 
+		_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+		outtextxy(80+100,350+20,s1);
+		putimage(80,350,&img_coin1);
+		if(new_data.jud_skin2==false)
+			outtextxy(650,750,str_lock2);
+		if(new_data.jud_skin3==false)
+			outtextxy(1100,750,str_lock3);
+	}
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-	outtextxy(200,700,str_ben);
-	outtextxy(550,700,str_cyc);
-	outtextxy(1120,700,str_pyran);
-	putimage(320-40  , 620-40 ,&img_cha1);
-	putimage(770-40  , 620-40 ,&img_cha2);
-	putimage(1200-40  , 620-45 ,&img_cha3);
+	outtextxy(200,600,str_ben);
+	outtextxy(550,600,str_cyc);
+	outtextxy(1120,600,str_pyran);
+	putimage(320-40  , 520-40 ,&img_cha1);
+	putimage(770-40  , 520-40 ,&img_cha2);
+	putimage(1200-40  , 520-45 ,&img_cha3);
 	FlushBatchDraw();
 	while(1)	
 	{
@@ -2917,33 +2967,265 @@ void MENU_CHA::eventt()
 		if(_kbhit())
 		{
 			char aaa=_getch();
-			if(aaa=='\r') {	gamestatus=3;break;}
-			if(aaa=='a'||aaa=='d')
+			if(aaa=='\r') 
+			{	
+				if(tem_mod==1 || (tem_mod==2&&new_data.jud_skin2==true) || (tem_mod==3&&new_data.jud_skin3==true))
+				{
+					gamestatus=8;
+					break;
+				}
+				if(new_data.co_coin<20)
+				{
+					tem_mod=1; 
+				}
+				else if(tem_mod==2)
+				{
+					new_data.jud_skin2=true;
+					new_data.co_coin-=20;
+					new_data.write_data();
+					putimage(300,370,&img_empt);
+					putimage(650,750,&img_empt);
+					LOGFONT f;
+					gettextstyle(&f); 
+					_tcscpy(f.lfFaceName, _T("黑体"));   
+					f.lfQuality = ANTIALIASED_QUALITY;  
+					f.lfHeight = 35;  
+					f.lfWidth=20;
+					settextstyle(&f);   
+					settextcolor(RGB(255,255,0));
+					TCHAR s1[10]; 
+					_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+					outtextxy(80+100,350+20,s1);
+					putimage(80,350,&img_coin1);
+					continue;
+				}
+				else if(tem_mod==3)
+				{
+					new_data.jud_skin3=true;
+					new_data.co_coin-=20;
+					new_data.write_data();
+					putimage(1100,750,&img_empt);
+					putimage(300,370,&img_empt);
+					LOGFONT f;
+					gettextstyle(&f); 
+					_tcscpy(f.lfFaceName, _T("黑体"));   
+					f.lfQuality = ANTIALIASED_QUALITY;  
+					f.lfHeight = 35;  
+					f.lfWidth=20;
+					settextstyle(&f);   
+					settextcolor(RGB(255,255,0));
+					TCHAR s1[10]; 
+					_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+					outtextxy(80+100,350+20,s1);
+					putimage(80,350,&img_coin1);
+					continue;
+				}
+			}
+			else if(aaa=='a'||aaa=='d')
 			{
 				if(aaa=='a')
 					tem_mod=tem_mod>1?tem_mod-1:3;
 				if(aaa=='d')
 					tem_mod=tem_mod<3?tem_mod+1:1;
-				setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
-				setfillcolor(RGB(0,0,0));
-				fillellipse(310,790,325,800);
-				fillellipse(760,790,775,800);
-				fillellipse(1200,790,1215,800);
+				
 			}
+			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
+			setfillcolor(RGB(0,0,0));
+			fillellipse(310,690,325,700);
+			fillellipse(760,690,775,700);
+			fillellipse(1200,690,1215,700);
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 		setfillcolor(RGB(255,0,0));
 		if(tem_mod==1)
-			fillellipse(310,790,325,800);
+			fillellipse(310,690,325,700);
 		else if(tem_mod==2)
-			fillellipse(760,790,775,800);
+			fillellipse(760,690,775,700);
 		else 
-			fillellipse(1200,790,1215,800);
+			fillellipse(1200,690,1215,700);
 		FlushBatchDraw();
 	}
 	EndBatchDraw();
 	new_data.co_ben.mod=tem_mod;
 	new_data.co_ben.set_new_data(new_data.co_ben.mod);
+	new_data.write_data();
+	Game::clear();
+	FSM::current=transition(gamestatus);
+}
+
+State* MENU_SKILL::transition(int x)  
+{  
+    switch(x)  
+    {  
+        case 2:  
+            return &s2;  
+		case 3:  
+            return &s3;  
+        default:  
+            return &s8;  
+    }  
+}  
+void MENU_SKILL::eventt()
+{
+	new_data.read_data();
+	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
+	LPCTSTR str_c1=L"抽取";
+	LPCTSTR str_c2=L"重新抽取 ( $ 5 )";
+	LPCTSTR str_c3=L"完成";
+	LPCTSTR str_c4=L"恭喜获得：";
+	LPCTSTR str_ski1=L"子弹",str_ski2=L"旋转",str_ski3=L"穿透激光",str_ski4=L"即死激光",str_ski5=L"爆弹",str_ski6=L"食弹";
+	LPCTSTR str_title=L"抽取初始技能";
+	int gamestatus=1;
+	int tem_state=1;
+	BeginBatchDraw();
+	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
+	setfillcolor(RGB(255,0,0));
+	fillellipse(460,630,460+15,630+10);
+	//fillellipse(460,730,460+15,730+10);
+	setbkcolor(RGB(0,0,0));
+	settextstyle(110,40,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	outtextxy(500,150,str_title);
+	settextstyle(60,35,_T("方正姚体"));  settextcolor(RGB(255,255,255));
+	outtextxy(480,600,str_c1);
+	outtextxy(480,700,str_c2);
+	outtextxy(480,800,str_c3);
+	LOGFONT f;
+	gettextstyle(&f); 
+	_tcscpy(f.lfFaceName, _T("黑体"));   
+	f.lfQuality = ANTIALIASED_QUALITY;  
+	f.lfHeight = 35;  
+	f.lfWidth=20;
+	settextstyle(&f);   
+	TCHAR s1[10]; 
+	settextcolor(RGB(255,255,0));
+	_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+	outtextxy(80+100,350+420,s1);
+	putimage(80,350+400,&img_coin1);
+	FlushBatchDraw();
+	while(1)	
+	{
+		BeginBatchDraw();
+		if(GetAsyncKeyState(VK_ESCAPE)<0)
+		{	
+			gamestatus=2;
+			break;
+		}
+		if(_kbhit())
+		{
+			char aaa=_getch();
+			if(aaa=='\r') 
+			{	
+				if(new_data.co_flag==0)
+				{
+					if(tem_state!=1) 
+					{	
+						tem_state=1;
+						continue;
+					}
+					new_data.co_flag=1;
+					new_data.co_ben.ski[0]=rand()%6+1;
+					f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
+					settextcolor(RGB(255,255,0));
+					outtextxy(480,400,str_c4);
+					putimage(760,400,&img_empt);
+					switch(new_data.co_ben.ski[0])
+					{
+					case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
+					case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
+					case 3: outtextxy(760,400,str_ski3); putimage(800,500,&img_ski3);break;
+					case 4: outtextxy(760,400,str_ski4); putimage(800,500,&img_ski4);break;
+					case 5: outtextxy(760,400,str_ski5); putimage(800,500,&img_ski5);break;
+					case 6: outtextxy(760,400,str_ski6); putimage(800,500,&img_ski6); break;
+					}
+					new_data.write_data();
+					new_data.set_data(cyclooctane);
+				}
+				else
+				{
+					if(tem_state==1 || (tem_state==2&&(new_data.co_coin<5)))
+					{
+						tem_state=3;
+						continue;
+					}
+					if(tem_state==3)
+					{
+						gamestatus=3;
+						break;
+					}
+					if(new_data.co_coin>=5)
+					{
+						new_data.co_ben.ski[0]=rand()%6+1;
+						f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
+						settextcolor(RGB(255,255,0));
+						outtextxy(480,400,str_c4);
+						putimage(760,400,&img_empt);
+						switch(new_data.co_ben.ski[0])
+						{
+						case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
+						case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
+						case 3: outtextxy(760,400,str_ski3); putimage(800,500,&img_ski3);break;
+						case 4: outtextxy(760,400,str_ski4); putimage(800,500,&img_ski4);break;
+						case 5: outtextxy(760,400,str_ski5); putimage(800,500,&img_ski5);break;
+						case 6: outtextxy(760,400,str_ski6); putimage(800,500,&img_ski6); break;
+						}
+						new_data.co_coin-=5;
+						f.lfHeight = 35;  
+						f.lfWidth=20;
+						settextstyle(&f);   
+						TCHAR s1[10]; 
+						_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+						putimage(290,340+420,100,100,&img_empt,0,0);
+						outtextxy(80+100,350+420,s1);
+						new_data.write_data();
+						new_data.set_data(cyclooctane);
+					}
+				}
+				
+			}
+			if(aaa=='s'||aaa=='w')
+			{
+				if(aaa=='w')
+					tem_state=tem_state>1?tem_state-1:3;
+				if(aaa=='s')
+					tem_state=tem_state<3?tem_state+1:1;
+			}
+		}
+		if(new_data.co_flag!=0)
+		{
+			f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
+			settextcolor(RGB(255,255,0));
+			outtextxy(480,400,str_c4);
+			putimage(760,400,&img_empt);
+			switch(new_data.co_ben.ski[0])
+			{
+			case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
+			case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
+			case 3: outtextxy(760,400,str_ski3); putimage(800,500,&img_ski3);break;
+			case 4: outtextxy(760,400,str_ski4); putimage(800,500,&img_ski4);break;
+			case 5: outtextxy(760,400,str_ski5); putimage(800,500,&img_ski5);break;
+			case 6: outtextxy(760,400,str_ski6); putimage(800,500,&img_ski6); break;
+			}
+		}
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
+		setfillcolor(RGB(0,0,0));
+		fillellipse(460,630,460+15,630+10);
+		fillellipse(460,730,460+15,730+10);
+		fillellipse(460,830,460+15,830+10);
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
+		setfillcolor(RGB(255,0,0));
+		if(tem_state==1)
+			fillellipse(460,630,460+15,630+10);
+		else if(tem_state==2)
+			fillellipse(460,730,460+15,730+10);
+		else if(tem_state==3)
+			fillellipse(460,830,460+15,830+10);
+
+		FlushBatchDraw();
+	}
+	EndBatchDraw();
+	new_data.co_ben.cur=0;
+	new_data.write_data();
+	new_data.set_data(cyclooctane);
 	Game::clear();
 	FSM::current=transition(gamestatus);
 }
@@ -2966,6 +3248,7 @@ void ON_GAME::eventt()
 {
 	int gamestatus=3;
 	new_data.set_data(cyclooctane);
+	new_data.on_game=true;
 	//new_data.fresh_data();
 	Game::clear();
 	while(1)  //  游戏循环执行
@@ -2993,6 +3276,8 @@ void ON_GAME::eventt()
 		}
 		if(cyclooctane.ben.life_now<=0)
 		{
+			cyclooctane.coin+=cyclooctane.room_count-1;
+			new_data.on_game=false;
 			gamestatus=5; break;
 		}
 		if(cyclooctane.room_count%3==0&&cyclooctane.room_count&&cyclooctane.judge_update==0)
@@ -3003,6 +3288,8 @@ void ON_GAME::eventt()
 
 	}
 	EndBatchDraw();
+	new_data.store_data(cyclooctane);
+	new_data.write_data();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 	return;
@@ -3119,6 +3406,9 @@ void MENU_DEAD::eventt()
 	int co_score=new_data.co_room_count; 
 	TCHAR str_sc[10];
 	_stprintf(str_sc,_T("%d"),co_score);
+	new_data.co_flag=0;
+	new_data.write_data();
+
 	while(1)	
 	{
 		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
@@ -3158,6 +3448,7 @@ void MENU_DEAD::eventt()
 	case 1: gamestatus=1; break;
 	case 2: gamestatus=6; break;
 	}
+	
 	Game::clear();
 	FSM::current=transition(gamestatus);
 } 
@@ -3172,7 +3463,7 @@ void EXIT::eventt()
 	exit(0);
 } 
 
-State* CHANGE::transition(int x)  
+State* SHOP1::transition(int x)  
 {  
     switch(x)  
     {  
@@ -3182,7 +3473,7 @@ State* CHANGE::transition(int x)
             return &s7;  
     }  
 }  
-void CHANGE::eventt()
+void SHOP1::eventt()
 {
 	new_data.store_data(cyclooctane);
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
@@ -3298,7 +3589,7 @@ void CHANGE::eventt()
 			else
 				fillellipse(565,825,585,845);
 		}
-		switch(tem_mod)
+	/*	switch(tem_mod)
 		{
 		case 1: new_data.co_ben.life_now=new_data.co_ben.life; break;
 		case 2: new_data.co_ben.life+=2; new_data.co_ben.life_now+=2; break;
@@ -3313,8 +3604,7 @@ void CHANGE::eventt()
 				{
 					new_data.co_ben.range+=50; break;
 				}
-					
-		}
+		}*/
 	}
 	Game::clear();
 	new_data.set_data(cyclooctane);
@@ -3341,6 +3631,11 @@ void Data_Base::fresh_data()
 	co_Monster_num_total=0;
 	co_num_monster_fresh=0;
 	co_judge_update=0;
+	co_coin=0;
+	co_flag=0;
+	on_game=false;
+	jud_skin2=false;
+	jud_skin3=false;
 	return;
 }
 void Data_Base::store_data(const Game& b)
@@ -3356,6 +3651,7 @@ void Data_Base::store_data(const Game& b)
 	co_num_monster_fresh=num_monster_fresh;
 	co_judge_update=b.judge_update;
 	co_coin=b.coin;
+	co_flag=b.flag;
 	return;
 }
 void Data_Base::set_data(Game& a)
@@ -3371,6 +3667,7 @@ void Data_Base::set_data(Game& a)
 	num_monster_fresh=co_num_monster_fresh;
 	a.judge_update=co_judge_update;
 	a.coin=co_coin;
+	a.flag=co_flag;
 	return;
 }
 bool Data_Base::read_data()
@@ -3393,6 +3690,10 @@ bool Data_Base::read_data()
 	load_data.read( (char *)&co_square,sizeof(co_square) );
 	load_data.read( (char *)&co_room,sizeof(co_room) );
 	load_data.read( (char *)&co_coin,sizeof(co_coin) );
+	load_data.read( (char *)&co_flag,sizeof(co_flag) );
+	load_data.read( (char *)&on_game,sizeof(on_game) );
+	load_data.read( (char *)&jud_skin2,sizeof(jud_skin2) );
+	load_data.read( (char *)&jud_skin3,sizeof(jud_skin3) );
 	load_data.close();
 	return true;
 }
@@ -3421,6 +3722,10 @@ void Data_Base::write_data()
 	save_data.write( (char *)&co_square,sizeof(co_square) );
 	save_data.write( (char *)&co_room,sizeof(co_room) );
 	save_data.write( (char *)&co_coin,sizeof(co_coin) );
+	save_data.write( (char *)&co_flag,sizeof(co_flag) );
+	save_data.write( (char *)&on_game,sizeof(on_game) );
+	save_data.write( (char *)&jud_skin2,sizeof(jud_skin2) );
+	save_data.write( (char *)&jud_skin3,sizeof(jud_skin3) );
 	save_data.close();
 	return;
 }
@@ -3439,6 +3744,7 @@ void FSM::change(int n)
 	case 5: current = &s5;  break;
 	case 6: current = &s6;  break;
 	case 7: current = &s7;  break;
+	case 8: current = &s8;  break;
 	default :current = &s3;  break;
 	}
 	return;
