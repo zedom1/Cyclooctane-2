@@ -21,6 +21,9 @@ int num_monster_fresh=0;
 int Game::coin=0;
 int Data_Base::co_coin=0;
 int Bullet::range[]={0,20,0,500,550,15,0};
+double Bullet::speed[]={0,15,0,0,0,22,0};
+int shop_transport=2;
+
 /////////// 全局对象 ////////////////
 Vector temp_vector;
 Game cyclooctane,empt;
@@ -32,12 +35,16 @@ MENU_PAUSE s4;
 MENU_DEAD s5;  
 EXIT s6;
 SHOP1 s7;
+SHOP2 s9;
+HELP s10;
 State* FSM::current=NULL; 
 Data_Base new_data;
 Node mapp[45][45];
 IMAGE img_heart1 , img_heart2 , img_heart3 , img_empt , img_cha1 , img_cha2 , img_cha3;
 IMAGE img_ski1,img_ski2,img_ski3,img_ski4,img_ski5,img_ski6,img_ski_null;
 IMAGE img_coin1,img_coin2;
+IMAGE img_help1,img_help2,img_help3,img_help4,img_help5,img_help6,img_help7,img_help8;
+
 /////////// 全局函数 ////////////////
 int normalize_x(double x)  //找到坐标所在方格的中心点x坐标
 {
@@ -288,6 +295,14 @@ void initi()
 	loadimage(&img_ski_null,_T("null.bmp"),100,100);
 	loadimage(&img_coin1,_T("coin.bmp"),70,70);
 	loadimage(&img_coin2,_T("soul.bmp"),70,70);
+	loadimage(&img_help1,_T("help1.jpg"),1100,900);
+	loadimage(&img_help2,_T("help2.jpg"),1100,900);
+	loadimage(&img_help3,_T("help3.jpg"),1100,900);
+	loadimage(&img_help4,_T("help4.jpg"),1100,900);
+	loadimage(&img_help5,_T("help5.jpg"),1100,900);
+	loadimage(&img_help6,_T("help6.jpg"),1100,900);
+	loadimage(&img_help7,_T("help7.jpg"),1100,900);
+	loadimage(&img_help8,_T("help8.jpg"),1100,900);
 	getimage(&img_empt, 0  , 750,225 ,50);
 	FSM::reset();
 }
@@ -570,8 +585,8 @@ void Game::update_bullet()
 					if( ( (bul->pos_x-square.pos_x)*(bul->pos_x-square.pos_x)  )+( (bul->pos_y-square.pos_y)*(bul->pos_y-square.pos_y) )>=350*350*2  )
 						bul->exist=false;
 					bul->print_bul_old(bul->pos_x,bul->pos_y);
-					bul->pos_x+=bul->speed*cosf(bul->xita);
-					bul->pos_y-=bul->speed*sinf(bul->xita);
+					bul->pos_x+=bul->speed[bul->cur]*cosf(bul->xita);
+					bul->pos_y-=bul->speed[bul->cur]*sinf(bul->xita);
 					bul->print_bul_new(bul->pos_x,bul->pos_y);
 					judge_bullet(5,8,square.pos,bul->pos_x, bul->pos_y, bul->xita);
 					Vector circle_up(bul->pos_x-bul->r,bul->pos_y-bul->r),circle_down(bul->pos_x+bul->r,bul->pos_y+bul->r);
@@ -785,8 +800,8 @@ void Game::update_bullet()
 			if( ( (ben.head->pos_x-square.pos_x)*(ben.head->pos_x-square.pos_x)  )+( (ben.head->pos_y-square.pos_y)*(ben.head->pos_y-square.pos_y) )>=350*350*2  )
 				ben.head->exist=false;
 			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-			ben.head->pos_x+=ben.head->speed*cosf(ben.head->xita);
-			ben.head->pos_y-=ben.head->speed*sinf(ben.head->xita);
+			ben.head->pos_x+=ben.head->speed[ben.head->cur]*cosf(ben.head->xita);
+			ben.head->pos_y-=ben.head->speed[ben.head->cur]*sinf(ben.head->xita);
 			ben.head->print_bul_new(ben.head->pos_x,ben.head->pos_y);
 			judge_bullet(5,8,square.pos,ben.head->pos_x, ben.head->pos_y, ben.head->xita);
 			Vector circle_up(ben.head->pos_x-ben.head->r,ben.head->pos_y-ben.head->r),circle_down(ben.head->pos_x+ben.head->r,ben.head->pos_y+ben.head->r);
@@ -831,13 +846,13 @@ void Game::update_bullet()
 						death_count+=3;
 					Monster::num_total--;
 					ben.special.r+=7;
-					ben.special.speed-=2;
+					ben.special.speed[ben.special.cur]-=2;
 					if(ben.special.r>=50)
 					{
 						ben.last_special.pos_x=ben.special.pos_x;
 						ben.last_special.pos_y=ben.special.pos_y;
 						ben.special.r=20;
-						ben.special.speed=22;
+						ben.special.speed[ben.special.cur]=22;
 						bomb_hurt(2);
 						break;
 					}
@@ -2035,13 +2050,13 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 		{
 			special.print_bul_old(special.pos_x,special.pos_y);
 			if(GetAsyncKeyState(VK_UP)<0) 
-				special.pos_y-=special.speed/2;
+				special.pos_y-=special.speed[special.cur]/2;
 			if(GetAsyncKeyState(VK_DOWN)<0) 
-				special.pos_y+=special.speed/2;
+				special.pos_y+=special.speed[special.cur]/2;
 			if(GetAsyncKeyState(VK_LEFT)<0) 
-				special.pos_x-=special.speed/2;
+				special.pos_x-=special.speed[special.cur]/2;
 			if(GetAsyncKeyState(VK_RIGHT)<0) 
-				special.pos_x+=special.speed/2;
+				special.pos_x+=special.speed[special.cur]/2;
 			special.print_bul_new(special.pos_x,special.pos_y);
 			special.cur=ski[cur];
 		}
@@ -2153,11 +2168,8 @@ void Charactor::set_new_data(int md)
 	num_count[3]=-1;
 	num_bul=0;
 	life_now=life=10;
-	  
 	speed=10;
-	
 	special.r=30;
-	special.speed=22;
 	head=new Bullet;
 	head->exist=false;
 	last=head;
@@ -2331,7 +2343,6 @@ Bullet::Bullet(double x,double y,double xi)
 	pos_x=x; pos_y=y;
 	xita=xi;
 	nex=NULL;
-	speed=15;
 	exist=true;
 	life=0;
 	r=5;
@@ -2342,7 +2353,6 @@ Bullet::Bullet()
 {
 	pos_x=pos_y=0;
 	exist=false;
-	speed=15;
 	r=5;
 	special=false;
 	nex=NULL;
@@ -2368,7 +2378,6 @@ void Bullet::operator =(Bullet a)
 	this->pos_y=a.pos_y;
 	this->xita=a.xita;
 	this->exist=a.exist;
-	this->speed=a.speed;
 	this->life=a.life;
 	this->special=a.special;
 	return;
@@ -2765,6 +2774,8 @@ State* MENU_START::transition(int x)
             return &s3;  
         case 6:  
             return &s6;  
+		case 10:
+			return &s10;
         default:  
             return &s1;  
     }  
@@ -2776,6 +2787,7 @@ void MENU_START::eventt()
 	LPCTSTR str_start=L"Start";
 	LPCTSTR str_version=L"V2.0";
 	LPCTSTR str_exit=L"Exit";
+	LPCTSTR str_help=L"Help";
 	LPCTSTR str_load=L"Load";
 	LPCTSTR str_title=L"Cyclooctane";
 	LPCTSTR str_sub_title=L"----Who's the Hunter Now?";
@@ -2794,7 +2806,7 @@ void MENU_START::eventt()
 	new_data.co_ben.print_cha_new(1000,850,new_data.co_ben.print_chara);
 	getimage(&img_cha3, 1000-40  , 850-45 ,80 ,85);
 
-	POINT sqr_now[]={ 650,450, 855,450,  855,533,  650,533 ,  650,450 };
+	POINT sqr_now[]={ 650,410, 855,410,  855,493,  650,493 ,  650,410 };
 	while(1)	
 	{
 		BeginBatchDraw();
@@ -2804,14 +2816,15 @@ void MENU_START::eventt()
 		setbkcolor(RGB(0,0,0));
 		settextcolor(RGB(255,255,255));
 		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(380,150,str_title);
+		outtextxy(380,100,str_title);
 		settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(1130,245,str_version);
+		outtextxy(1130,195,str_version);
 		settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(850,330,str_sub_title);
+		outtextxy(850,280,str_sub_title);
 		settextstyle(80,40,_T("Agency FB"));  settextcolor(RGB(255,255,255));
-		outtextxy(655,450,str_start);
-		outtextxy(665,580,str_load);
+		outtextxy(655,410,str_start);
+		outtextxy(660,510,str_load);
+		outtextxy(665,610,str_help);
 		outtextxy(680,710,str_exit);
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		polyline(sqr_now, 5);
@@ -2821,15 +2834,15 @@ void MENU_START::eventt()
 		if(aaa=='w'||aaa=='s')
 		{
 			if(aaa=='w')
-				gamestatus=gamestatus>1?gamestatus-1:3;
+				gamestatus=gamestatus>1?gamestatus-1:4;
 			if(aaa=='s')
-				gamestatus=gamestatus<3?gamestatus+1:1;
+				gamestatus=gamestatus<4?gamestatus+1:1;
 			Game::clear();
 		}
 		setlinestyle(PS_SOLID, 5); setlinecolor(RGB(255,0,0));
 		if(gamestatus==1)
 		{
-			POINT sqr_a[]={ 650,450, 855,450,  855,533,  650,533 ,  650,450 };
+			POINT sqr_a[]={ 650,410, 855,410,  855,493,  650,493 ,  650,410 };
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
@@ -2838,15 +2851,25 @@ void MENU_START::eventt()
 		}
 		else if(gamestatus==2)
 		{
-			POINT sqr_a[]={ 655,580, 850,580, 850,663,  655,663 , 655,580 };
+			POINT sqr_a[]={ 655,510, 850,510, 850,593,  655,593 , 655,510 };
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
 				sqr_now[i].y=sqr_a[i].y;
 			}
 		}
-		else {
+		else if(gamestatus==4)
+		{
 			POINT sqr_a[]={ 672,710, 820,710, 820,793, 672,793 , 672,710 }; 
+			for(int i=0; i<5; i++) 
+			{
+				sqr_now[i].x=sqr_a[i].x;
+				sqr_now[i].y=sqr_a[i].y;
+			}
+		}
+		else if(gamestatus==3)
+		{
+			POINT sqr_a[]={ 655,610, 850,610, 850,693,  655,693 , 655,610 };
 			for(int i=0; i<5; i++) 
 			{
 				sqr_now[i].x=sqr_a[i].x;
@@ -2886,9 +2909,10 @@ void MENU_START::eventt()
 		else if(new_data.on_game==true)
 			new_data.set_data(cyclooctane);
 	}
-	else
+	else if(gamestatus==4)
 		gamestatus=6;
-	
+	else
+		gamestatus=10;
 	FSM::current=transition(gamestatus);
 	return;
 }
@@ -3459,7 +3483,6 @@ State* EXIT::transition(int)
 }  
 void EXIT::eventt()
 {
-	new_data.fresh_data();
 	exit(0);
 } 
 
@@ -3468,148 +3491,405 @@ State* SHOP1::transition(int x)
     switch(x)  
     {  
         case 3:  
-            return &s3;    
+            return &s3;
+		case 9:
+			return &s9;
         default:  
             return &s7;  
     }  
 }  
 void SHOP1::eventt()
 {
+//	new_data.co_death_count=9999;
+	BeginBatchDraw();
 	new_data.store_data(cyclooctane);
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-	LPCTSTR str_ben=L"Benzene";
-	LPCTSTR str_cyc=L"Cyclohexadiene";
-	LPCTSTR str_pyran=L"Pyran";
 	LPCTSTR str_title=L"Update";
+	LPCTSTR str_choice1=L"升级人物属性";
+	LPCTSTR str_choice2=L"购买、替换技能";
+//	LPCTSTR str_choice3=L"升级技能";
+	LOGFONT f;
+	gettextstyle(&f); 
+	_tcscpy(f.lfFaceName, _T("黑体"));   
+	f.lfQuality = ANTIALIASED_QUALITY;  
+	settextstyle(&f);            
+	f.lfHeight = 35;  
+	f.lfWidth=20;
+	settextstyle(&f);   
+	TCHAR s1[10]; 
+	_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+	outtextxy(80+100,50+320,s1);
+	putimage(80,50+300,&img_coin2);
+
 	int gamestatus=7;
 	int tem_mod=1;
-	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
-	setfillcolor(RGB(255,0,0));
-	fillellipse(310,790,325,800);
-	
+	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
+	fillellipse(530,495,530+15,495+10);
+//	fillellipse(530,625,530+15,625+10);
+//	fillellipse(530,755,530+15,755+10);
 	setbkcolor(RGB(0,0,0));
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-	outtextxy(530,150,str_title); 
-	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-	outtextxy(200,700,str_ben);
-	outtextxy(550,700,str_cyc);
-	outtextxy(1120,700,str_pyran);
-
-	putimage( 320-40  , 620-40 , &img_cha1);
-	putimage( 770-40  , 620-40 , &img_cha2);
-	putimage( 1200-40  , 620-45 , &img_cha3);
+	outtextxy(530,100,str_title); 
+	settextstyle(70,35,_T("黑体"));  settextcolor(RGB(255,255,255));
+	outtextxy(570,470,str_choice1);
+	outtextxy(570,600,str_choice2); 
+//	outtextxy(570,730,str_choice3); 
+	FlushBatchDraw();
 	while(1)	
 	{
-		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
-		setfillcolor(RGB(255,0,0));
+		BeginBatchDraw();
 		if(_kbhit())
 		{
 			char aaa=_getch();
 			if(aaa==27) 
 			{
-				Game::clear();
-				new_data.set_data(cyclooctane);
-				new_data.fresh_data();
-				new_data.store_data(cyclooctane);
-				FSM::current=transition(3);
-				return;
+				gamestatus=3;break;
 			}
-			if(aaa=='\r') {gamestatus=3;break;}
-			if(aaa=='a'||aaa=='d')
+			if(aaa=='\r') 
 			{
-				if(aaa=='a')
-					tem_mod=tem_mod>1?tem_mod-1:3;
-				if(aaa=='d')
-					tem_mod=tem_mod<3?tem_mod+1:1;
+				gamestatus=9;break;
+			}
+			if(aaa=='w'||aaa=='s')
+			{
+				if(aaa=='w')
+					tem_mod=tem_mod>1?tem_mod-1:2;
+				if(aaa=='s')
+					tem_mod=tem_mod<2?tem_mod+1:1;
 				setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
 				setfillcolor(RGB(0,0,0));
-				fillellipse(310,790,325,800);
-				fillellipse(760,790,775,800); 
-				fillellipse(1200,790,1215,800);
+				fillellipse(530,495,530+15,495+10);
+				fillellipse(530,625,530+15,625+10);
+		//		fillellipse(530,755,530+15,755+10);
 			}
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 		setfillcolor(RGB(255,0,0));
 		if(tem_mod==1)
-			fillellipse(310,790,325,800);
+			fillellipse(530,495,530+15,495+10);
 		else if(tem_mod==2)
-			fillellipse(760,790,775,800);
-		else 
-			fillellipse(1200,790,1215,800);
+			fillellipse(530,625,530+15,625+10);
+	//	else 
+	//		fillellipse(530,755,530+15,755+10);
+		FlushBatchDraw();
 	}
+	EndBatchDraw();
 	Game::clear();
-	if(tem_mod!=new_data.co_ben.mod)
-	{	
-		new_data.co_ben.mod=tem_mod;
-		new_data.co_ben.set_new_data(new_data.co_ben.mod);
-	}
-	else
+	shop_transport=tem_mod;
+	FSM::current=transition(gamestatus);
+	return;
+}
+
+State* SHOP2::transition(int x)  
+{  
+    switch(x)  
+    {
+        case 3:  return &s3; 
+		case 7:  return &s7;
+        default:  return &s9;  
+    }
+}  
+void SHOP2::eventt()
+{
+	BeginBatchDraw();
+	int gamestatus=9;
+	int tem=1;
+	FlushBatchDraw();
+	LPCTSTR str_title1=L"升级人物属性";
+	LPCTSTR str_title2=L"购买、替换技能";
+	LPCTSTR str_ski_c0=L"a、d在已有技能中切换，w、s在商店技能中切换";
+
+	LPCTSTR str_cha_c1=L"恢复所有生命 ($50)";
+	LPCTSTR str_cha_c2=L"+2最大生命 ($100)";
+	LPCTSTR str_cha_c3=L"+2移动速度 ($70)";
+
+	LPCTSTR str_ski1=L"子弹";
+	LPCTSTR str_ski2=L"旋转";
+	LPCTSTR str_ski3=L"穿透激光";
+	LPCTSTR str_ski4=L"即死激光";
+	LPCTSTR str_ski5=L"爆弹";
+	LPCTSTR str_ski6=L"食弹";
+
+	LOGFONT f;
+	gettextstyle(&f); 
+	_tcscpy(f.lfFaceName, _T("黑体"));   
+	f.lfQuality = ANTIALIASED_QUALITY;         
+	f.lfHeight = 35;  
+	f.lfWidth=20;
+	settextstyle(&f);   
+	TCHAR s1[10]; 
+	_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+	outtextxy(80+100,50+320,s1);
+	putimage(80,50+300,&img_coin2);
+if(shop_transport==1)
+{
+	settextstyle(120,45,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	outtextxy(510,130,str_title1); 
+	settextstyle(60,30,_T("黑体"));  settextcolor(YELLOW);
+	outtextxy(570,470,str_cha_c1);
+	outtextxy(570,570,str_cha_c2);
+	outtextxy(570,670,str_cha_c3);
+	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
+	fillellipse(530,495,530+15,495+10);
+//	fillellipse(530,595,530+15,595+10);
+//	fillellipse(530,695,530+15,695+10);
+	while(1)
 	{
-		LPCTSTR str_recovery=L"恢复生命至满";
-		LPCTSTR str_life=L"增加生命上限";
-		LPCTSTR str_speed=L"增加移速";
-		LPCTSTR str_range=L"增加射程";
-		setbkcolor(RGB(0,0,0));
-		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-		outtextxy(530,100,str_title);
-		settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
-		outtextxy(600,500,str_recovery);
-		outtextxy(600,600,str_life);
-		outtextxy(600,700,str_speed);
-		outtextxy(600,800,str_range);
-		while(1)
+		BeginBatchDraw();
+		if(_kbhit())
 		{
-			if(_kbhit())
+			char cc=getch();
+			if(cc==27)
 			{
-				char aaa=_getch();
-				if(aaa==27) {gamestatus=7;break;}
-				if(aaa=='\r') {gamestatus=3;break;}
-				if(aaa=='w'||aaa=='s')
+				gamestatus=7;
+				break;
+			}
+			if(cc=='w')
+				tem=tem>1?tem-1:3;
+			if(cc=='s')
+				tem=tem<3?tem+1:1;
+			if(cc=='\r')
+			{
+				if(tem==1&&new_data.co_death_count>=50)
 				{
-					if(aaa=='w')
-						tem_mod=tem_mod>1?tem_mod-1:4;
-					if(aaa=='s')
-						tem_mod=tem_mod<4?tem_mod+1:1;
-					setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0));
-					setfillcolor(RGB(0,0,0));
-					fillellipse(565,525,585,545);
-					fillellipse(565,625,585,645);
-					fillellipse(565,725,585,745);
-					fillellipse(565,825,585,845);
+					new_data.co_death_count-=50;
+					new_data.co_ben.life_now=new_data.co_ben.life;
+				}
+				else if(tem==2&&new_data.co_death_count>=100)
+				{
+					new_data.co_death_count-=100;
+					new_data.co_ben.life+=2;
+					new_data.co_ben.life_now+=2;
+				}
+				else if(tem==3&&new_data.co_death_count>=70)
+				{
+					new_data.co_death_count-=70;
+					new_data.co_ben.speed+=2;
 				}
 			}
-			setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
-			setfillcolor(RGB(255,0,0));
-			if(tem_mod==1)
-				fillellipse(565,525,585,545);
-			else if(tem_mod==2)
-				fillellipse(565,625,585,645);
-			else if(tem_mod==3)
-				fillellipse(565,725,585,745);
-			else
-				fillellipse(565,825,585,845);
+
 		}
-	/*	switch(tem_mod)
+		putimage(300,370,&img_empt);
+		gettextstyle(&f); 
+		_tcscpy(f.lfFaceName, _T("黑体"));   
+		f.lfQuality = ANTIALIASED_QUALITY;         
+		f.lfHeight = 35;  
+		f.lfWidth=20;
+		settextstyle(&f);   settextcolor(RGB(255,255,255));
+		TCHAR s1[10]; 
+		_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+		outtextxy(80+100,50+320,s1);
+		putimage(80,50+300,&img_coin2);
+		
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0)); setfillcolor(RGB(0,0,0));
+		fillellipse(530,495,530+15,495+10);
+		fillellipse(530,595,530+15,595+10);
+		fillellipse(530,695,530+15,695+10);
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
+		switch(tem)
 		{
-		case 1: new_data.co_ben.life_now=new_data.co_ben.life; break;
-		case 2: new_data.co_ben.life+=2; new_data.co_ben.life_now+=2; break;
-		case 3: new_data.co_ben.speed+=2; break;
-		case 4: if(new_data.co_ben.mod==1) 
-					new_data.co_ben.range+=13;
-				else 	if(new_data.co_ben.mod==3) 
-				{		
-					new_data.co_ben.head->speed+=5;
-				}
-				else
-				{
-					new_data.co_ben.range+=50; break;
-				}
-		}*/
+		case 1: fillellipse(530,495,530+15,495+10); break;
+		case 2: fillellipse(530,595,530+15,595+10); break;
+		case 3: fillellipse(530,695,530+15,695+10); break;
+		}
+		FlushBatchDraw();
 	}
+}
+else if(shop_transport==2)
+{
+	int tem1=1,tem2=1;
+	settextstyle(120,45,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
+	outtextxy(480,130,str_title2); 
+	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(0,255,255));
+	outtextxy(480,300,str_ski_c0);
+	IMAGE img_tem;
+	getimage(&img_tem,0,0,180,150);
+	LPCTSTR str_shop_ski1=L"子弹：$200";
+	LPCTSTR str_shop_ski2=L"旋转：$220";
+	LPCTSTR str_shop_ski3=L"穿透激光：$250";
+	LPCTSTR str_shop_ski4=L"即死激光：$250";
+	LPCTSTR str_shop_ski5=L"爆弹：$230";
+	LPCTSTR str_shop_ski6=L"食弹：$250";
+	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
+	fillellipse(150,760,150+15,760+10);
+//	fillellipse(340,760,340+15,760+10);
+	settextcolor(RGB(255,255,0));
+	putimage(650,400,&img_ski1);   putimage(1100,400,&img_ski4);
+	putimage(650,550,&img_ski2);   putimage(1100,550,&img_ski5);
+	putimage(650,700,&img_ski3);   putimage(1100,700,&img_ski6);
+	outtextxy(780,430,str_shop_ski1);  outtextxy(1230,430,str_shop_ski4);
+	outtextxy(780,580,str_shop_ski2);  outtextxy(1230,580,str_shop_ski5);
+	outtextxy(780,730,str_shop_ski3);  outtextxy(1230,730,str_shop_ski6);
+	fillellipse(650-30,400+40,650-15,400+50); 
+//	fillellipse(1100-30,400+40,1100-15,400+50);
+//	fillellipse(650-30,550+40,650-15,550+50); 
+//	fillellipse(1100-30,550+40,1100-15,550+50);
+//	fillellipse(650-30,700+40,650-15,700+50); 
+//	fillellipse(1100-30,700+40,1100-15,700+50);
+	while(1)
+	{
+		BeginBatchDraw();
+		if(_kbhit())
+		{
+			char cc=getch();
+			if(cc==27)
+			{
+				gamestatus=7;
+				break;
+			}
+			if(cc=='a')
+				if(new_data.co_ben.ski[1]!=0)
+				{
+					if(tem1==1) tem1=2;
+					else tem1=1;
+				}
+			if(cc=='d')
+			{	
+				if(new_data.co_ben.ski[1]!=0)
+				{
+					if(tem1==2) tem1=1;
+					else tem1=2;
+				}
+			}
+			if(cc=='w')
+				tem2=tem2>1?tem2-1:6;
+			if(cc=='s')
+				tem2=tem2<6?tem2+1:1;
+			if(cc=='\r')
+			{
+				if( tem2!=new_data.co_ben.ski[0] && tem2!=new_data.co_ben.ski[1] )
+				{
+					if( (tem2==1&&new_data.co_death_count>=200) || (tem2==2&&new_data.co_death_count>=220) || (tem2==3&&new_data.co_death_count>=250) || (tem2==4&&new_data.co_death_count>=250) || (tem2==5&&new_data.co_death_count>=230) || (tem2==6&&new_data.co_death_count>=250))
+					{
+						if(new_data.co_ben.ski[1]==0)
+						{
+							new_data.co_ben.ski[1]=tem2;
+						}
+						else
+						{
+							new_data.co_ben.ski[tem1-1]=tem2;
+						}
+						new_data.co_death_count-=200;
+						if(tem2==3||tem2==4||tem2==6)
+							new_data.co_death_count-=50;
+						if(tem2==2)
+							new_data.co_death_count-=20;
+						if(tem2==5)
+							new_data.co_death_count-=30;
+					}
+				}
+			}
+		}
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0)); setfillcolor(RGB(0,0,0));
+		fillellipse(150,760,150+15,760+10);
+		fillellipse(340,760,340+15,760+10);
+		fillellipse(650-30,400+40,650-15,400+50); 
+		fillellipse(1100-30,400+40,1100-15,400+50);
+		fillellipse(650-30,550+40,650-15,550+50); 
+		fillellipse(1100-30,550+40,1100-15,550+50);
+		fillellipse(650-30,700+40,650-15,700+50); 
+		fillellipse(1100-30,700+40,1100-15,700+50);
+		putimage(100,600,&img_tem);
+		putimage(300,600,&img_tem);
+		putimage(300,370,&img_empt);
+		gettextstyle(&f); 
+		_tcscpy(f.lfFaceName, _T("黑体"));   
+		f.lfQuality = ANTIALIASED_QUALITY;         
+		f.lfHeight = 35;  
+		f.lfWidth=20;
+		settextstyle(&f);   settextcolor(RGB(255,255,255));
+		TCHAR s1[10]; 
+		_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+		outtextxy(80+100,50+320,s1);
+		putimage(80,50+300,&img_coin2);
+		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
+		switch(tem1)
+		{
+		case 1: fillellipse(150,760,150+15,760+10); break;
+		case 2: fillellipse(340,760,340+15,760+10); break;
+		}
+		switch(tem2)
+		{
+		case 1: fillellipse(650-30,400+40,650-15,400+50);  break;
+		case 2: fillellipse(650-30,550+40,650-15,550+50); break;
+		case 3: fillellipse(650-30,700+40,650-15,700+50);  break;
+		case 4: fillellipse(1100-30,400+40,1100-15,400+50); break;
+		case 5: fillellipse(1100-30,550+40,1100-15,550+50); break;
+		case 6: fillellipse(1100-30,700+40,1100-15,700+50); break;
+		}
+		settextcolor(RGB(255,50,255));
+		switch(new_data.co_ben.ski[0])
+		{
+		case 1: outtextxy(120,710,str_ski1); putimage(100,600,&img_ski1); break;
+		case 2: outtextxy(110,710,str_ski2); putimage(100,600,&img_ski2);break;
+		case 3: outtextxy(100,710,str_ski3); putimage(100,600,&img_ski3);break;
+		case 4: outtextxy(100,710,str_ski4); putimage(100,600,&img_ski4);break;
+		case 5: outtextxy(120,710,str_ski5); putimage(100,600,&img_ski5);break;
+		case 6: outtextxy(120,710,str_ski6); putimage(100,600,&img_ski6); break;
+		}
+		switch(new_data.co_ben.ski[1])
+		{
+		case 0: putimage(300,600,&img_ski_null); break;
+		case 1: outtextxy(320,710,str_ski1); putimage(300,600,&img_ski1); break;
+		case 2: outtextxy(310,710,str_ski2); putimage(300,600,&img_ski2);break;
+		case 3: outtextxy(300,710,str_ski3); putimage(300,600,&img_ski3);break;
+		case 4: outtextxy(300,710,str_ski4); putimage(300,600,&img_ski4);break;
+		case 5: outtextxy(320,710,str_ski5); putimage(300,600,&img_ski5);break;
+		case 6: outtextxy(320,710,str_ski6); putimage(300,600,&img_ski6); break;
+		}
+		FlushBatchDraw();
+	}
+}
+	EndBatchDraw();
 	Game::clear();
 	new_data.set_data(cyclooctane);
-	new_data.fresh_data();
 	new_data.store_data(cyclooctane);
+	FSM::current=transition(gamestatus);
+	return;
+}
+
+State* HELP::transition(int x)
+{
+    switch(x)  
+    {
+        case 1:  return &s1; 
+        default:  return &s10;  
+    }
+}
+void HELP::eventt()
+{
+	int gamestatus=10;
+	int tem=1;
+	while(1)
+	{
+		BeginBatchDraw();
+		switch(tem)
+		{
+		case 1: putimage(250,50,&img_help1); break;
+		case 2: putimage(250,50,&img_help2); break;
+		case 3: putimage(250,50,&img_help3); break;
+		case 4: putimage(250,50,&img_help4); break;
+		case 5: putimage(250,50,&img_help5); break;
+		case 6: putimage(250,50,&img_help6); break;
+		case 7: putimage(250,50,&img_help7); break;
+		case 8: putimage(250,50,&img_help8); break;
+		}
+		if(_kbhit())
+		{
+			char cc=getch();
+			if(cc=='W'|| cc=='w')
+				tem=tem>=2?tem-1:tem;
+			if(cc=='s'|| cc=='S')
+				tem=tem<=7?tem+1:tem;
+			if(cc==27)
+			{	
+				gamestatus=1;
+				break;
+			}
+		}
+		FlushBatchDraw();
+	}
+	EndBatchDraw();
+	Game::clear();
 	FSM::current=transition(gamestatus);
 	return;
 }
@@ -3672,11 +3952,10 @@ void Data_Base::set_data(Game& a)
 }
 bool Data_Base::read_data()
 {
-	fresh_data();
 	ifstream load_data("save01.data",ios::in|ios::binary);
 	if( !load_data.is_open())
 	{  return false;}
-
+	fresh_data();
 	load_data.read((char *)&current_state, sizeof(current_state) );
 	load_data.read((char *)&co_judge_update, sizeof(co_judge_update) );
 	load_data.read((char *)&co_death_count, sizeof(co_death_count) );
@@ -3732,7 +4011,7 @@ void Data_Base::write_data()
 /////////// FSM ////////////////
 void FSM::reset()  
 {  
-    current = &s1;  
+    current = &s9;  
 }
 void FSM::change(int n)
 {
@@ -3745,6 +4024,7 @@ void FSM::change(int n)
 	case 6: current = &s6;  break;
 	case 7: current = &s7;  break;
 	case 8: current = &s8;  break;
+	case 9: current = &s9;  break;
 	default :current = &s3;  break;
 	}
 	return;

@@ -90,6 +90,14 @@
     <Image Include="heart1.bmp" />
     <Image Include="heart2.bmp" />
     <Image Include="heart3.bmp" />
+    <Image Include="help1.JPG" />
+    <Image Include="help2.JPG" />
+    <Image Include="help3.JPG" />
+    <Image Include="help4.JPG" />
+    <Image Include="help5.JPG" />
+    <Image Include="help6.JPG" />
+    <Image Include="help7.JPG" />
+    <Image Include="help8.JPG" />
     <Image Include="laser1.bmp" />
     <Image Include="laser2.bmp" />
     <Image Include="null.bmp" />

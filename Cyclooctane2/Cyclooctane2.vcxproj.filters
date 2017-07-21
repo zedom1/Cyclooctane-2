@@ -64,5 +64,29 @@
     <Image Include="laser1.bmp">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="help1.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help2.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help7.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help8.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help3.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help4.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help5.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="help6.JPG">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

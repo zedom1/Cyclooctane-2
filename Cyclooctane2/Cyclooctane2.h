@@ -43,8 +43,8 @@ struct MENU_PAUSE;
 struct MENU_DEAD;
 struct EXIT;
 struct SHOP1;
-//struct SHOP2;
-
+struct SHOP2;
+struct HELP;
 
 struct Node
 {
@@ -89,7 +89,7 @@ struct Bullet
 	double pos_x,pos_y;
 	double xita;
 	bool exist;
-	double speed;
+	static double speed[10];
 	bool special;
 	int life;
 	int cur;
@@ -344,7 +344,17 @@ struct SHOP1:public State
 	void eventt();
 };  
 
+struct SHOP2:public State  
+{
+    State* transition(int);  
+	void eventt();
+};  
 
+struct HELP:public State  
+{
+    State* transition(int);  
+	void eventt();
+};  
 
 struct FSM
 {  	
