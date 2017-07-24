@@ -37,12 +37,14 @@ struct Data_Base;
 struct State;   
 struct MENU_START;
 struct MENU_CHA;
+struct MENU_SKILL;
 struct ON_GAME;
 struct MENU_PAUSE;
 struct MENU_DEAD;
 struct EXIT;
-struct MENU_CHANGE;
-
+struct SHOP1;
+struct SHOP2;
+struct HELP;
 
 struct Node
 {
@@ -87,9 +89,11 @@ struct Bullet
 	double pos_x,pos_y;
 	double xita;
 	bool exist;
-	double speed;
+	static double speed[10];
 	bool special;
 	int life;
+	int cur;
+	static int	 range[10];
 	Bullet *nex;
 	
 public:
@@ -104,7 +108,7 @@ public:
 
 struct Charactor //角色
 {
-	char name[15];
+	TCHAR name[15];
 	double pos_x,pos_y;
 	//int judge_cha_state;   //  状态
 	int judge_dir; // 判断此时的常态方向
@@ -115,12 +119,11 @@ struct Charactor //角色
 	POINT line_array[100];
 	int num_bul,num_line_array;
 	double speed;
-	int range;
 	int life,life_now;
 	POINT print_chara[14];
 	int mod;
-	int ski[2]; int cur;
-	int num_count[5];
+	int ski[5]; int cur;
+	int num_count[10];
 public:
 	Charactor();
 	void print_cha_new(double x,double y,POINT print_chara[]);
@@ -235,6 +238,8 @@ struct Game
 	int room_count;
 	bool judge_update;
 	friend struct Data_Base;
+	static int coin;
+	int flag;
 public:
 	Game();
 	void startup();
@@ -271,6 +276,10 @@ struct Data_Base
 	int co_room_count;
 	int co_Monster_num_count;
 	int current_state;
+	int co_flag;
+	bool on_game;
+	bool jud_skin2,jud_skin3;
+	static int co_coin;
 	Bullet store_bul[100]; int num_store_bul;
 	~Data_Base();
 	Data_Base();
@@ -288,6 +297,12 @@ struct State
 };
 
 struct MENU_START:public State  
+{  
+	void eventt();
+    State* transition(int); 
+};  
+
+struct MENU_SKILL:public State  
 {  
 	void eventt();
     State* transition(int); 
@@ -323,7 +338,19 @@ struct EXIT:public State
 	void eventt();
 };  
 
-struct CHANGE:public State  
+struct SHOP1:public State  
+{
+    State* transition(int);  
+	void eventt();
+};  
+
+struct SHOP2:public State  
+{
+    State* transition(int);  
+	void eventt();
+};  
+
+struct HELP:public State  
 {
     State* transition(int);  
 	void eventt();
