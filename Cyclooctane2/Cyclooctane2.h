@@ -116,8 +116,7 @@ struct Charactor //角色
 	Bullet *head,*last;     //  技能1：子弹
 	Bullet line,last_line;    //  技能3、4： 激光
 	Bullet special,last_special;   //  技能5、6：爆弹、食弹
-	POINT line_array[100];
-	int num_bul,num_line_array;
+	int num_bul;
 	double speed;
 	int life,life_now;
 	POINT print_chara[14];
@@ -129,7 +128,7 @@ public:
 	void print_cha_new(double x,double y,POINT print_chara[]);
 	void print_cha_old(double x,double y,POINT print_chara[]);
 	void new_point(double x,double y, POINT print_chara[]);
-	void print_round_new(double x,double y,POINT print_chara[]);
+	void updateWithInput(double x,double y,POINT print_chara[]);
 	void print_part_cha_new(double x,double y, POINT print_chara[]);
 	void print_cha_line(double x, double y);
 	void print_cha_ball(double x, double y,bool judge_old);

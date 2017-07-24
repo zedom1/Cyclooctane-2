@@ -645,8 +645,6 @@ void Game::update_bullet()
 		POINT tem,cut,tttem; 
 		line1_head.x=ben.line.pos_x;
 		line1_head.y=ben.line.pos_y;
-		if(ben.ski[ben.cur]==4)
-			ben.line_array[ben.num_line_array++]=line1_head;
 		while(ben.line.life>0)
 		{
 			tem.x=line1_head.x+ben.line.life*cosf(ben.line.xita);
@@ -680,6 +678,8 @@ void Game::update_bullet()
 			}
 			else if(ben.ski[ben.cur]==4) // 即死激光反弹函数区
 			{
+				if(Bullet::num_time_count==3)
+					Game::clear();
 					double minx=MAX_DOUBLE;
 					for(int j=0; j<400; j++) // 找激光可射中的最近的怪物的距离平方最小值
 					{
@@ -719,7 +719,7 @@ void Game::update_bullet()
 							{
 								if(minx1!=point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1])) continue;
 								judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut);
-								if(ben.line.exist==true)
+								if(ben.line.exist==true && Bullet::num_time_count==2)
 								{	
 									room.monster[j].print_old(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
 									room.monster[j].exist=false;
@@ -735,11 +735,11 @@ void Game::update_bullet()
 								{
 									setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
 								}
-								line(line1_head.x,line1_head.y, cut.x, cut.y);
+								if(Bullet::num_time_count==1)
+									line(line1_head.x,line1_head.y, cut.x, cut.y);
 								ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
 								judge_bullet(k,k+1,room.monster[j].pos,cut.x, cut.y, ben.line.xita);
 								line1_head.x=cut.x; line1_head.y=cut.y;
-								ben.line_array[ben.num_line_array++]=cut;
 								break;
 							}
 						if(k<room.monster[j].num_edge) break;
@@ -765,11 +765,11 @@ void Game::update_bullet()
 							{
 								setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
 							}
-							line(line1_head.x,line1_head.y, cut.x, cut.y);
+							if(Bullet::num_time_count==1)
+								line(line1_head.x,line1_head.y, cut.x, cut.y);
 							ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
 							judge_bullet(k,k+1,room.stone[q].pos,cut.x, cut.y, ben.line.xita);
 							line1_head.x=cut.x; line1_head.y=cut.y;
-							ben.line_array[ben.num_line_array++]=cut;
 							break;
 						}
 						if(k<4) break;
@@ -792,8 +792,6 @@ void Game::update_bullet()
 				{
 					if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
 					{
-						if(ben.ski[ben.cur]==4)
-							ben.line_array[ben.num_line_array++]=cut;
 						if(ben.ski[ben.cur]==3)
 						{
 							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
@@ -806,7 +804,8 @@ void Game::update_bullet()
 						{
 							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
 						}
-						line(line1_head.x,line1_head.y, cut.x, cut.y);
+						if( ( Bullet::num_time_count==1 && ben.ski[ben.cur]==4 ) || ben.ski[ben.cur]==3)
+							line(line1_head.x,line1_head.y, cut.x, cut.y);
 						ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
 						judge_bullet(5,8,square.pos,cut.x, cut.y, ben.line.xita);
 						line1_head.x=cut.x; line1_head.y=cut.y;
@@ -824,18 +823,8 @@ void Game::update_bullet()
 			{
 				setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
 			}
-			line ( line1_head.x , line1_head.y , line1_last.x , line1_last.y );
-			if(ben.ski[ben.cur]==4)
-			{	
-				ben.line_array[ben.num_line_array++]=line1_last;
-				if(Bullet::num_time_count==3)
-				{	
-					setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
-					for(int i=0; i<ben.num_line_array-1; i++)
-						line ( ben.line_array[i].x , ben.line_array[i].y , ben.line_array[i+1].x , ben.line_array[i+1].y );
-					ben.num_line_array=0;
-				}
-			}
+			if( ( Bullet::num_time_count==1 && ben.ski[ben.cur]==4 ) || ben.ski[ben.cur]==3)
+				line ( line1_head.x , line1_head.y , line1_last.x , line1_last.y );
 			if(ben.ski[ben.cur]==3)
 			{
 				if(Bullet::num_time_count==3)
@@ -944,7 +933,7 @@ void Game::updateWithInput()
 	}
 	square.judge_input(ben.ski[ben.cur]);
 	if(room.time_count>=room.time_max) return;
-	ben.print_round_new(ben.pos_x, ben.pos_y,ben.print_chara);
+	ben.updateWithInput(ben.pos_x, ben.pos_y,ben.print_chara);
 	if(_kbhit()) 
 	{	
 		char order=_getch();
@@ -2020,7 +2009,7 @@ void Charactor::new_point(double x,double y, POINT print_chara[])
 	}
 	return;
 }
-void Charactor::print_round_new(double x,double y,POINT print_chara[])
+void Charactor::updateWithInput(double x,double y,POINT print_chara[])
 {
 	if(   ( ski[cur]==2 ) || ( ski[cur]==0 )  ) 
 	{ 
@@ -2225,12 +2214,10 @@ void Charactor::set_new_data(int md)
 	//judge_cha_state=false;
 	judge_hurt=-1;
 	judge_dir=1;
-	num_line_array=0;
 	ski[1]=ski[2]=ski[3]=ski[4]=0;
 	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
-	memset(line_array,0,sizeof(line_array));
 	memset(name,0,sizeof(name));
 	num_count[3]=-1;
 	num_bul=0;
