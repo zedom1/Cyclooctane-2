@@ -169,6 +169,7 @@ public:
 	virtual void new_point()=0;
 	void new_center(double angle);
 };
+
 struct Stab:public Obstacle
 {
 	int count;// 地刺型障碍物的计时器
@@ -182,6 +183,7 @@ struct Stab:public Obstacle
 	Stab();
 	Stab(double x, double y);
 };
+
 struct Stone:public Obstacle
 {
 	virtual void new_point();

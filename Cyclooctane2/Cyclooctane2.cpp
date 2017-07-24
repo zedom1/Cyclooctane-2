@@ -20,7 +20,7 @@ int Monster::num_total=0;
 int num_monster_fresh=0;
 int Game::coin=0;
 int Data_Base::co_coin=0;
-int Bullet::range[]={0,20,0,500,550,15,0};
+int Bullet::range[]={0,20,0,400,500,15,0};
 double Bullet::speed[]={0,15,0,0,0,15,22};
 int shop_transport=2;
 
@@ -634,7 +634,12 @@ void Game::update_bullet()
 	}
 	if(ben.ski[ben.cur]==3 || ben.ski[ben.cur]==4)
 	{
-		if(ben.line.exist==false&&Bullet::num_time_count!=3) return;
+		if(ben.last_line.exist==true)
+		{
+			if(Bullet::num_time_count>3)
+				ben.last_line.exist=false;
+		}
+		if( (ben.last_line.exist==false&&Bullet::num_time_count!=3) ) return;
 		ben.line=ben.last_line;
 		POINT line1_head,line1_last,line2_head,line2_last;
 		POINT tem,cut,tttem; 
@@ -647,7 +652,7 @@ void Game::update_bullet()
 			tem.x=line1_head.x+ben.line.life*cosf(ben.line.xita);
 			tem.y=line1_head.y-ben.line.life*sinf(ben.line.xita);
 			line1_last=tem;
-			if(ben.ski[ben.cur]==3)
+			if(ben.ski[ben.cur]==3&&ben.line.exist==true&&Bullet::num_time_count==1)
 			{
 				for(int j=0; j<400; j++)
 				if(room.monster[j].exist==true)
@@ -673,61 +678,106 @@ void Game::update_bullet()
 					}
 				}
 			}
-			else
+			else if(ben.ski[ben.cur]==4) // 即死激光反弹函数区
 			{
-				double minx=MAX_DOUBLE;
-				for(int j=0; j<400; j++) // 找激光可射中的最近的怪物的距离平方最小值
-				{
-					if(room.monster[j].exist==false) continue;
-					for(int k=0; k<room.monster[j].num_edge; k++)
-						if(judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut)==true)
-							if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
-							{	
-								minx=min(minx, (line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y)  );
+					double minx=MAX_DOUBLE;
+					for(int j=0; j<400; j++) // 找激光可射中的最近的怪物的距离平方最小值
+					{
+						if(room.monster[j].exist==false) continue;
+						for(int k=0; k<room.monster[j].num_edge; k++)
+							if(judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut)==true)
+								if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
+								{	
+									minx=min(minx, (line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y)  );
+									break;
+								}
+					}
+					for(int j=0; j<room.num_stone; j++) // 找激光可射中的最近的岩石的距离平方最小值
+					{
+						for(int k=0; k<4; k++)
+							if(judge_coll_line(line1_head,line1_last,room.stone[j].pos[k],room.stone[j].pos[k+1],cut)==true)
+								if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
+								{	
+									minx=min(minx, (line1_head.x-room.stone[j].pos_x)*(line1_head.x-room.stone[j].pos_x)+(line1_head.y-room.stone[j].pos_y)*(line1_head.y-room.stone[j].pos_y)  );
+									break;
+								}
+					}
+
+					int j=0;
+					for( ;j<400; j++) //找激光可射中的最近的怪物
+						if(room.monster[j].exist==true)
+						{
+							if(minx!=(line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y))
+								continue;
+							double minx1=MAX_DOUBLE;
+							for(int k=0; k<room.monster[j].num_edge; k++) // 找该怪物距离出射点最近的一条边并记录最小值
+							{
+								minx1=min(minx1,point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1]));
+							}
+							int k=0;
+							for(; k<room.monster[j].num_edge; k++)
+							{
+								if(minx1!=point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1])) continue;
+								judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut);
+								if(ben.line.exist==true)
+								{	
+									room.monster[j].print_old(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
+									room.monster[j].exist=false;
+									Monster::num_total--;
+									//printf("1111\n");
+									if(room.monster[j].special==0)
+										death_count++;
+									else
+										death_count+=3;
+								}
+								setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
+								if(Bullet::num_time_count==3)
+								{
+									setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
+								}
+								line(line1_head.x,line1_head.y, cut.x, cut.y);
+								ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
+								judge_bullet(k,k+1,room.monster[j].pos,cut.x, cut.y, ben.line.xita);
+								line1_head.x=cut.x; line1_head.y=cut.y;
+								ben.line_array[ben.num_line_array++]=cut;
 								break;
 							}
-				}
-				int j=0;
-				for( ;j<400; j++) //找激光可射中的最近的怪物
-					if(room.monster[j].exist==true)
+						if(k<room.monster[j].num_edge) break;
+					}
+					
+					int q=0;
+					for( ;q<room.num_stone; q++) //找激光可射中的最近的岩石
 					{
-						if(minx!=(line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y))
+						if(minx!=(line1_head.x-room.stone[q].pos_x)*(line1_head.x-room.stone[q].pos_x)+(line1_head.y-room.stone[q].pos_y)*(line1_head.y-room.stone[q].pos_y))
 							continue;
 						double minx1=MAX_DOUBLE;
-						for(int k=0; k<room.monster[j].num_edge; k++) // 找该怪物距离出射点最近的一条边并记录最小值
+						for(int k=0; k<4; k++) // 找该岩石距离出射点最近的一条边并记录最小值
 						{
-							minx1=min(minx1,point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1]));
+							minx1=min(minx1,point_to_line(line1_head,room.stone[q].pos[k],room.stone[q].pos[k+1]));
 						}
 						int k=0;
-						for(; k<room.monster[j].num_edge; k++)
+						for(; k<4; k++)
 						{
-							if(minx1!=point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1])) continue;
-							judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut);
-							room.monster[j].print_old(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
-							room.monster[j].exist=false;
-							Monster::num_total--;
-							//printf("1111\n");
-							if(room.monster[j].special==0)
-								death_count++;
-							else
-								death_count+=3;
-							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+							if(minx1!=point_to_line(line1_head,room.stone[q].pos[k],room.stone[q].pos[k+1])) continue;
+							judge_coll_line(line1_head,line1_last,room.stone[q].pos[k],room.stone[q].pos[k+1],cut);
+							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
 							if(Bullet::num_time_count==3)
 							{
 								setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
 							}
 							line(line1_head.x,line1_head.y, cut.x, cut.y);
 							ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
-							judge_bullet(k,k+1,room.monster[j].pos,cut.x, cut.y, ben.line.xita);
+							judge_bullet(k,k+1,room.stone[q].pos,cut.x, cut.y, ben.line.xita);
 							line1_head.x=cut.x; line1_head.y=cut.y;
 							ben.line_array[ben.num_line_array++]=cut;
 							break;
 						}
-					if(k<room.monster[j].num_edge) break;
-				}
-				if(j<400) continue;
+						if(k<4) break;
+					}
+					if(q<room.num_stone || j<400) continue;
+
 			}
-			int i=0;
+			int i=0; // 墙壁反射
 			for(; i<4; i++)
 			{
 				if(i==0)
@@ -744,7 +794,14 @@ void Game::update_bullet()
 					{
 						if(ben.ski[ben.cur]==4)
 							ben.line_array[ben.num_line_array++]=cut;
-						setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+						if(ben.ski[ben.cur]==3)
+						{
+							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+						}
+						else
+						{
+							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
+						}
 						if(Bullet::num_time_count==3)
 						{
 							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
@@ -757,8 +814,16 @@ void Game::update_bullet()
 					}
 				}
 			}
-			if(i<4) continue; // 与墙壁也没发生反射 激光直射至射程最大值
-			setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+			if(i<4) continue; 
+			// 与墙壁也没发生反射 激光直射至射程最大值
+			if(ben.ski[ben.cur]==3)
+			{
+				setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
+			}
+			else
+			{
+				setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
+			}
 			line ( line1_head.x , line1_head.y , line1_last.x , line1_last.y );
 			if(ben.ski[ben.cur]==4)
 			{	
@@ -782,6 +847,7 @@ void Game::update_bullet()
 			break;
 		}
 		ben.line.life=0;
+		
 	}
 
 	if(ben.ski[ben.cur]==5) // bomb
@@ -1719,7 +1785,7 @@ while(findd==false)
 		PATH[end_path++]=temp.pos;   // 记录路径
 		temp=mapp[temp.fa.x][temp.fa.y];   // 回溯至父节点
 		count++;
-		if(count>9600)
+		if(count>6666)
 		{path.x=aim_x;path.y=aim_y;return;}
 	}
 	POINT ans={ get_x_from_i(PATH[end_path-1].x) , get_y_from_j(PATH[end_path-1].y) };
@@ -1961,8 +2027,9 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 		print_cha_new(pos_x,pos_y,print_chara);	 
 		return; 
 	}
-	if(Bullet::num_time_count<3 &&  ( ski[cur]!=6 ) ) 
-		return;
+	// 限制子弹、爆弹、激光射击频率
+	if( (Bullet::num_time_count<3 &&  ( ski[cur]==1 ))  ||  (Bullet::num_time_count<10 &&  ( ski[cur]==3  )) || (Bullet::num_time_count<6 &&  ( ski[cur]==5 )) ||  (Bullet::num_time_count<10 &&  ( ski[cur]==4  )) ) 
+		return;   
 	Bullet::num_time_count=0;
 	if((GetAsyncKeyState(VK_UP)<0)||(GetAsyncKeyState(VK_DOWN)<0)||(GetAsyncKeyState(VK_LEFT)<0)||(GetAsyncKeyState(VK_RIGHT)<0))
 	{	
@@ -2011,7 +2078,7 @@ void Charactor::print_round_new(double x,double y,POINT print_chara[])
 		{
 			last_line.life=line.life=Bullet::range[ski[cur]];
 			last_line.cur=line.cur=ski[cur];
-			line.exist=true;
+			last_line.exist=line.exist=true;
 			last_line.pos_x=line.pos_x=pos_x;
 			last_line.pos_y=line.pos_y=pos_y;
 			if(GetAsyncKeyState(VK_UP)<0) 
@@ -3178,7 +3245,12 @@ void MENU_SKILL::eventt()
 					}
 					if(new_data.co_coin>=5)
 					{
-						new_data.co_ben.ski[0]=rand()%6+1;
+						int ccc=new_data.co_ben.ski[0];
+						while(ccc==new_data.co_ben.ski[0])
+						{
+							ccc=rand()%6+1;
+						}
+						new_data.co_ben.ski[0]=ccc;
 						f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
 						settextcolor(RGB(255,255,0));
 						outtextxy(480,400,str_c4);
@@ -3500,9 +3572,12 @@ State* SHOP1::transition(int x)
 }  
 void SHOP1::eventt()
 {
-	new_data.co_death_count=9999;
-	BeginBatchDraw();
 	new_data.store_data(cyclooctane);
+	new_data.write_data();
+	new_data.co_death_count=9999;
+	new_data.set_data(cyclooctane);
+	BeginBatchDraw();
+	
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_title=L"Update";
 	LPCTSTR str_choice1=L"升级人物属性";
@@ -3665,6 +3740,9 @@ if(shop_transport==1)
 					new_data.co_death_count-=70;
 					new_data.co_ben.speed+=2;
 				}
+				new_data.set_data(cyclooctane);
+				new_data.store_data(cyclooctane);
+				new_data.write_data();
 			}
 
 		}
@@ -3777,6 +3855,9 @@ else if(shop_transport==2)
 							new_data.co_death_count-=30;
 					}
 				}
+				new_data.set_data(cyclooctane);
+				new_data.store_data(cyclooctane);
+				new_data.write_data();
 			}
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0)); setfillcolor(RGB(0,0,0));
@@ -3843,6 +3924,7 @@ else if(shop_transport==2)
 	Game::clear();
 	new_data.set_data(cyclooctane);
 	new_data.store_data(cyclooctane);
+	new_data.write_data();
 	FSM::current=transition(gamestatus);
 	return;
 }
