@@ -1,4 +1,2 @@
 ﻿  Cyclooctane2.cpp
-g:\大一下\c++\大作业\cyclooctane2\cyclooctane2\cyclooctane2.cpp(2927): warning C4996: '_swprintf': This function or variable may be unsafe. Consider using _swprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-          c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(530) : 参见“_swprintf”的声明
-  Cyclooctane2.vcxproj -> G:\大一下\C++\大作业\Cyclooctane2\Debug\Cyclooctane2.exe
+  Cyclooctane2.vcxproj -> G:\大一下\C++\大作业\Cyclooctane2\Cyclooctane2\Debug\Cyclooctane2.exe

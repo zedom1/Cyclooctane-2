@@ -21,7 +21,7 @@ int num_monster_fresh=0;
 int Game::coin=0;
 int Data_Base::co_coin=0;
 int Bullet::range[]={0,20,0,500,550,15,0};
-double Bullet::speed[]={0,15,0,0,0,22,0};
+double Bullet::speed[]={0,15,0,0,0,15,22};
 int shop_transport=2;
 
 /////////// 全局对象 ////////////////
@@ -283,26 +283,26 @@ void initi()
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
 	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
-	loadimage(&img_heart1,_T("heart1.bmp"),40,40);
-	loadimage(&img_heart2,_T("heart2.bmp"),40,40);
-	loadimage(&img_heart3,_T("heart3.bmp"),40,40);
-	loadimage(&img_ski1,_T("bullet.bmp"),100,100);
-	loadimage(&img_ski2,_T("rotate.bmp"),100,100);
-	loadimage(&img_ski3,_T("laser1.bmp"),100,100);
-	loadimage(&img_ski4,_T("laser2.bmp"),100,100);
-	loadimage(&img_ski5,_T("boom.bmp"),100,100);
-	loadimage(&img_ski6,_T("eater.bmp"),100,100);
-	loadimage(&img_ski_null,_T("null.bmp"),100,100);
-	loadimage(&img_coin1,_T("coin.bmp"),70,70);
-	loadimage(&img_coin2,_T("soul.bmp"),70,70);
-	loadimage(&img_help1,_T("help1.jpg"),1100,900);
-	loadimage(&img_help2,_T("help2.jpg"),1100,900);
-	loadimage(&img_help3,_T("help3.jpg"),1100,900);
-	loadimage(&img_help4,_T("help4.jpg"),1100,900);
-	loadimage(&img_help5,_T("help5.jpg"),1100,900);
-	loadimage(&img_help6,_T("help6.jpg"),1100,900);
-	loadimage(&img_help7,_T("help7.jpg"),1100,900);
-	loadimage(&img_help8,_T("help8.jpg"),1100,900);
+	loadimage(&img_heart1,_T("BMP"),_T("heart1"),40,40);
+	loadimage(&img_heart2,_T("BMP"),_T("heart2"),40,40);
+	loadimage(&img_heart3,_T("BMP"),_T("heart3"),40,40);
+	loadimage(&img_ski1,_T("BMP"),_T("bullet"),100,100);
+	loadimage(&img_ski2,_T("BMP"),_T("rotate"),100,100);
+	loadimage(&img_ski3,_T("BMP"),_T("laser1"),100,100);
+	loadimage(&img_ski4,_T("BMP"),_T("laser2"),100,100);
+	loadimage(&img_ski5,_T("BMP"),_T("boom"),100,100);
+	loadimage(&img_ski6,_T("BMP"),_T("eater"),100,100);
+	loadimage(&img_ski_null,_T("BMP"),_T("null"),100,100);
+	loadimage(&img_coin1,_T("BMP"),_T("coin"),70,70);
+	loadimage(&img_coin2,_T("BMP"),_T("soul"),70,70);
+	loadimage(&img_help1,_T("jpg"),_T("help1"),1100,900);
+	loadimage(&img_help2,_T("jpg"),_T("help2"),1100,900);
+	loadimage(&img_help3,_T("jpg"),_T("help3"),1100,900);
+	loadimage(&img_help4,_T("jpg"),_T("help4"),1100,900);
+	loadimage(&img_help5,_T("jpg"),_T("help5"),1100,900);
+	loadimage(&img_help6,_T("jpg"),_T("help6"),1100,900);
+	loadimage(&img_help7,_T("jpg"),_T("help7"),1100,900);
+	loadimage(&img_help8,_T("jpg"),_T("help8"),1100,900);
 	getimage(&img_empt, 0  , 750,225 ,50);
 	FSM::reset();
 }
@@ -1299,11 +1299,11 @@ void Game::fresh_room()
 {
 	if(room.time_count==room.time_max) 
 	{	
-		
 /*		if( !(ben.mod==3&&ben.judge_cha_state==1) )*/
 		if(ben.ski[ben.cur]!=6)
 			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
 		ben.special.print_bul_old(ben.special.pos_x,ben.special.pos_y);
+		Game::clear();
 	}
 	if(room.time_count>=room.time_max) 
 	{	
@@ -2931,7 +2931,7 @@ State* MENU_CHA::transition(int x)
 }  
 void MENU_CHA::eventt()
 {
-	//new_data.co_coin=999;
+	new_data.co_coin=999;
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_ben=L"Benzene";
 	LPCTSTR str_cyc=L"Cyclohexadiene";
@@ -3500,7 +3500,7 @@ State* SHOP1::transition(int x)
 }  
 void SHOP1::eventt()
 {
-//	new_data.co_death_count=9999;
+	new_data.co_death_count=9999;
 	BeginBatchDraw();
 	new_data.store_data(cyclooctane);
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
@@ -4011,7 +4011,7 @@ void Data_Base::write_data()
 /////////// FSM ////////////////
 void FSM::reset()  
 {  
-    current = &s9;  
+    current = &s1;  
 }
 void FSM::change(int n)
 {

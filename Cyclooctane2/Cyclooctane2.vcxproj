@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4214DFC9-43C2-41DB-843A-AF165451A421}</ProjectGuid>
+    <ProjectGuid>{B0233B7F-D07D-428B-A595-E829BE862BFF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Cyclooctane2</RootNamespace>
   </PropertyGroup>
@@ -76,33 +76,37 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Cyclooctane2.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="Cyclooctane2.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="boom.bmp" />
-    <Image Include="bullet.bmp" />
-    <Image Include="coin.bmp" />
-    <Image Include="eater.bmp" />
-    <Image Include="heart1.bmp" />
-    <Image Include="heart2.bmp" />
-    <Image Include="heart3.bmp" />
-    <Image Include="help1.JPG" />
-    <Image Include="help2.JPG" />
-    <Image Include="help3.JPG" />
-    <Image Include="help4.JPG" />
-    <Image Include="help5.JPG" />
-    <Image Include="help6.JPG" />
-    <Image Include="help7.JPG" />
-    <Image Include="help8.JPG" />
-    <Image Include="laser1.bmp" />
-    <Image Include="laser2.bmp" />
-    <Image Include="null.bmp" />
-    <Image Include="rotate.bmp" />
-    <Image Include="soul.bmp" />
+    <ClInclude Include="Cyclooctane2.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Cyclooctane2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\package\jpg\boom.bmp" />
+    <Image Include="..\..\..\package\jpg\bullet.bmp" />
+    <Image Include="..\..\..\package\jpg\coin.bmp" />
+    <Image Include="..\..\..\package\jpg\eater.bmp" />
+    <Image Include="..\..\..\package\jpg\heart1.bmp" />
+    <Image Include="..\..\..\package\jpg\heart2.bmp" />
+    <Image Include="..\..\..\package\jpg\heart3.bmp" />
+    <Image Include="..\..\..\package\jpg\help1.JPG" />
+    <Image Include="..\..\..\package\jpg\help2.JPG" />
+    <Image Include="..\..\..\package\jpg\help3.JPG" />
+    <Image Include="..\..\..\package\jpg\help4.JPG" />
+    <Image Include="..\..\..\package\jpg\help5.JPG" />
+    <Image Include="..\..\..\package\jpg\help6.JPG" />
+    <Image Include="..\..\..\package\jpg\help7.JPG" />
+    <Image Include="..\..\..\package\jpg\help8.JPG" />
+    <Image Include="..\..\..\package\jpg\laser1.bmp" />
+    <Image Include="..\..\..\package\jpg\laser2.bmp" />
+    <Image Include="..\..\..\package\jpg\null.bmp" />
+    <Image Include="..\..\..\package\jpg\rotate.bmp" />
+    <Image Include="..\..\..\package\jpg\soul.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
