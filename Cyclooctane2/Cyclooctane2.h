@@ -30,9 +30,6 @@ struct Square;
 struct Room; 
 struct Game;
 
-// 游戏数据类
-struct Data_Base;
-
 // 游戏状态类
 struct State;   
 struct MENU_START;
@@ -158,7 +155,7 @@ struct Obstacle // 障碍
 {
 public:
 	double pos_x,pos_y;//该障碍物的位置
-	double init,dis,angle;//与房间中心的初始角度和距离 (极坐标)
+	double init,dis;//与房间中心的初始角度和距离 (极坐标)
 	POINT pos[5];
 	Obstacle();
 	static const double r;
@@ -195,8 +192,9 @@ struct Square
 {
 public:
 	double pos_x,pos_y;   // 中心坐标
-	double angle,init;   //init为初始角度 ,angle为变化角度
+	double angle,init; 
 	double speed;
+	int jud_way;
 	POINT pos[10];
 	POINT edge1[5],edge2[5],edge3[5],edge4[5];
 	POINT corner[4];
@@ -213,8 +211,8 @@ struct Room  // 房间
 public:
 	Room();  
 	~Room();
-	Stab *stab;
-	Stone *stone;
+	Stab stab[10];
+	Stone stone[10];
 	Monster monster[500];
 	POINT door[5];
 	int num_stab,num_stone;
@@ -236,9 +234,13 @@ struct Game
 	int death_count;
 	static int room_count;
 	bool judge_update;
-	friend struct Data_Base;
 	static int coin;
 	int flag;
+	int current_state;
+	int Bullet_num_time_count;
+	static int num_monster_fresh;
+	bool on_game;
+	bool jud_skin2,jud_skin3;
 public:
 	Game();
 	void startup();
@@ -260,34 +262,12 @@ public:
 	void fresh_map();  // 实时更新地图
 	void fresh_room(); // 房间切换判定
 	void bomb_hurt(int mod); //第三形态普攻爆炸判定
-};
 
-struct Data_Base
-{
-	Charactor co_ben;
-	Square co_square;
-	Room co_room;
-	bool co_judge_update;
-	int co_death_count;
-	int co_Bullet_num_time_count;
-	int co_Monster_num_total;
-	int co_num_monster_fresh;
-	int co_room_count;
-	int co_Monster_num_count;
-	int current_state;
-	int co_flag;
-	bool on_game;
-	bool jud_skin2,jud_skin3;
-	static int co_coin;
-	Bullet store_bul[100]; int num_store_bul;
-	~Data_Base();
-	Data_Base();
-	void store_data(const Game& b);  // 保存当前数据（备份）
 	void fresh_data();  // 重置数据
-	void set_data(Game& a);   // 数据上传至游戏
 	void write_data();    // 存档（从文件）
 	bool read_data();    // 读档（从文件）
 };
+
 
 struct State  
 {  

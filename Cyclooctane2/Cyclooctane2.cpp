@@ -17,10 +17,9 @@ const double Obstacle::r=20.0;
 int Bullet::num_time_count=0;
 int Monster::num_count=0;
 int Monster::num_total=0;
-int num_monster_fresh=0;
+int Game::num_monster_fresh=0;
 int Game::coin=0;
 int Game::room_count=0;
-int Data_Base::co_coin=0;
 int Bullet::range[]={0,20,0,400,500,15,0};
 double Bullet::speed[]={0,15,0,0,0,15,22};
 int shop_transport=2;
@@ -39,7 +38,6 @@ SHOP1 s7;
 SHOP2 s9;
 HELP s10;
 State* FSM::current=NULL; 
-Data_Base new_data;
 Node mapp[45][45];
 IMAGE img_heart1 , img_heart2 , img_heart3 , img_empt , img_cha1 , img_cha2 , img_cha3;
 IMAGE img_ski1,img_ski2,img_ski3,img_ski4,img_ski5,img_ski6,img_ski_null;
@@ -276,7 +274,7 @@ bool judge_p_left_right(POINT a, POINT line1, POINT line2)
 }
 void initi()
 {
-	srand(time(0));
+	srand((unsigned)time(NULL));
 	initgraph(1200,800);
 	setaspectratio(0.8,0.808081);
 	setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 255 , 0 , 0 ));
@@ -448,14 +446,31 @@ void Game::show()
 	for(int i=0; i<room.num_stab; i++)
 	{	
 		room.stab[i].count++;
-		room.stab[i].print_now(square.angle);
+		double c;
+		switch(square.jud_way)
+		{
+		case 1: c=square.speed/100; break;
+		case 2: c=-square.speed/100; break;
+		default: c=0;
+		}
+		room.stab[i].print_now(c);
 		if(room.stab[i].count>room.stab[i].count_max)
 		{	room.stab[i].judge_show=!room.stab[i].judge_show;
 			room.stab[i].count=0;
 		}
 	} 
 	for(int i=0; i<room.num_stone; i++)
-		room.stone[i].print_now(square.angle);
+	{	
+		double c;
+		switch(square.jud_way)
+		{
+		case 1: c=square.speed/100; break;
+		case 2: c=-square.speed/100; break;
+		default: c=0;
+		}
+		room.stone[i].print_now(c);
+	}
+	square.jud_way=0;
 	int x=150,y=200,co=0;
 	//  print life  //
 	putimage(x,y,&img_empt);
@@ -1549,12 +1564,20 @@ void Room::new_door(POINT door[], double angle, int mod)
 void Room::new_room(int a)
 {
 	num_stab=rand()%3+2;
-	stab=new Stab[num_stab];
 	num_stone=rand()%4+2;
-	stone=new Stone[num_stone];
 	time_count=0;
 	rand_c=rand()%4;
 	time_max=200+a*20+(rand()%2-1)*40;
+	for(int i=0; i<num_stab; i++)
+	{	
+		stab[i].reset();
+	//	stab[i].new_point();
+	}
+	for(int i=0; i<num_stone; i++)
+	{	
+		stone[i].reset();
+		//stone[i].new_point();
+	}
 	for(int i=0; i<num_stab; i++)
 	{
 		for(int j=0; j<num_stab; j++)
@@ -1583,21 +1606,21 @@ void Room::new_room(int a)
 	Bullet::num_time_count=0;
 	Monster::num_count=0;
 	Monster::num_total=0;
-	num_monster_fresh=0;
+	Game::num_monster_fresh=0;
 	
 }
 void Room::update_monster(int x, int y, Square square)
 {
-	num_monster_fresh++;
+	Game::num_monster_fresh++;
 	double cc;
 	if(Game::room_count<=15)
 		cc=4*sin(Game::room_count*1.0)-1*Game::room_count*1.0+17-2*cos(2*Game::room_count*1.0);
 	else 
 		cc=1*sin(Game::room_count*1.0)+3-2*cos(2*Game::room_count*1.0);
-	if(num_monster_fresh>  cc   ) // 4*sin(x)-1*x+17-2*cos(2*x)    x<=15
+	if(Game::num_monster_fresh>  cc   ) // 4*sin(x)-1*x+17-2*cos(2*x)    x<=15
 		// 1*sin(x)+3-2*cos(2*x)
 	{	
-		num_monster_fresh=0;
+		Game::num_monster_fresh=0;
 		monster[Monster::num_count++].create_new_monster(x,y,square);
 		Monster::num_total++;
 		if(Monster::num_count>400)
@@ -2385,6 +2408,7 @@ Square::Square()
 	angle=0.0;
 	init=pi/4.0;
 	speed=8;
+	jud_way=0;
 	new_room_point(pos_x,pos_y,angle,pos);
 }
 void Square::judge_input( int ski)
@@ -2395,8 +2419,8 @@ void Square::judge_input( int ski)
 		if(ski==0)
 			cyclooctane.room.new_door(cyclooctane.room.door,angle,0);
 		paint_room_old(pos_x,pos_y,pos,angle);
-		if(GetAsyncKeyState(VK_LEFT)<0) angle+=speed/100;
-		if(GetAsyncKeyState(VK_RIGHT)<0) angle-=speed/100;
+		if(GetAsyncKeyState(VK_LEFT)<0) { angle+=speed/100; jud_way=1; }
+		if(GetAsyncKeyState(VK_RIGHT)<0) { angle-=speed/100; jud_way=2; }
 		paint_room_new(pos_x,pos_y,pos,angle);
 		if(ski==0)
 			cyclooctane.room.new_door(cyclooctane.room.door,angle,1);
@@ -2614,14 +2638,13 @@ void Obstacle::print_old()
 }
 void Obstacle::new_center(double angle1)
 {
-	angle=angle1;
-	pos_x=900+dis*(cosf(init+angle));
-	pos_y=495-dis*(sinf(init+angle));
+	init+=angle1;
+	pos_x=900+dis*(cosf(init));
+	pos_y=495-dis*(sinf(init));
 	new_point();
 }
 Obstacle::Obstacle()
 {
-	angle=0;
 }
 
 Stab::Stab()
@@ -2718,7 +2741,6 @@ void Stab::reset()
 		else
 			init=pi-init;
 	}
-	angle=0;
 	dis=sqrt( (900-pos_x)*(900-pos_x) + (495-pos_y)*(495-pos_y) );
 }
 void Stab::fresh_point()
@@ -2727,20 +2749,29 @@ void Stab::fresh_point()
 	for(int i=0 ;i<3; i++)
 	{
 		POINT tem_stab[]=
-		{pos_x-r+5,pos_y-r+tot+10,pos_x-r+10,pos_y-r+tot+5,pos_x-r+15,pos_y-r+tot+10,pos_x-r+20,pos_y-r+tot+5,pos_x-r+25,pos_y-r+tot+10,pos_x-r+30,pos_y-r+tot+5,pos_x-r+35,pos_y-r+tot+10};
+		{
+			pos_x-r+5 , pos_y-r+tot+10,
+			pos_x-r+10 , pos_y-r+tot+5,
+			pos_x-r+15 , pos_y-r+tot+10,
+			pos_x-r+20 , pos_y-r+tot+5,
+			pos_x-r+25 , pos_y-r+tot+10,
+			pos_x-r+30 , pos_y-r+tot+5,
+			pos_x-r+35 , pos_y-r+tot+10
+		};
 		for(int i=0; i<7; i++)
-		{stab[i].x=tem_stab[i].x;stab[i].y=tem_stab[i].y;}
+		{
+			stab[i].x=tem_stab[i].x;
+			stab[i].y=tem_stab[i].y;
+		}
 		tot+=13;
-	//	SelectObject(hdc,pen_black);
-		//Polyline(hdc,stab,7);
-	//	::SelectObject(hdc,GetStockObject(DC_PEN));
-	//	::SelectObject(hdc,GetStockObject(DC_BRUSH));
 	}
-//	::SelectObject(hdc,GetStockObject(DC_PEN));
-//	::SelectObject(hdc,GetStockObject(DC_BRUSH));
 	POINT edge1[]=
 	{
-		pos_x-r,pos_y-r,pos_x-r,pos_y+r,pos_x+r,pos_y+r,pos_x+r,pos_y-r,pos_x-r,pos_y-r
+		pos_x-r , pos_y-r,
+		pos_x-r , pos_y+r,
+		pos_x+r , pos_y+r,
+		pos_x+r , pos_y-r,
+		pos_x-r , pos_y-r
 	};
 	for(int i=0; i<5; i++)
 	{
@@ -2818,7 +2849,6 @@ void Stone::reset()
 		else
 			init=pi-init;
 	}
-	angle=0;
 	dis=sqrt( (900-pos_x)*(900-pos_x) + (495-pos_y)*(495-pos_y) );
 }
 void Stone::fresh_point()
@@ -2880,16 +2910,16 @@ void MENU_START::eventt()
 	int gamestatus=1;
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(123,123,123));
 	setfillcolor(RGB(123,123,123));
-
-	new_data.co_ben.set_new_data(new_data.co_ben.mod);
-	new_data.co_ben.mod=1;
-	new_data.co_ben.print_cha_new(500,850,new_data.co_ben.print_chara);
+	Game empt;
+	empt.ben.mod=1;
+	empt.ben.set_new_data(empt.ben.mod);
+	empt.ben.print_cha_new(500,850,empt.ben.print_chara);
 	getimage(&img_cha1, 500-40  , 850-40 ,80 ,80);
-	new_data.co_ben.mod=2;
-	new_data.co_ben.print_cha_new(750,850,new_data.co_ben.print_chara);
+	empt.ben.mod=2;
+	empt.ben.print_cha_new(750,850,empt.ben.print_chara);
 	getimage(&img_cha2, 750-40  , 850-40 ,80 ,80);
-	new_data.co_ben.mod=3;
-	new_data.co_ben.print_cha_new(1000,850,new_data.co_ben.print_chara);
+	empt.ben.mod=3;
+	empt.ben.print_cha_new(1000,850,empt.ben.print_chara);
 	getimage(&img_cha3, 1000-40  , 850-45 ,80 ,85);
 
 	POINT sqr_now[]={ 650,410, 855,410,  855,493,  650,493 ,  650,410 };
@@ -2967,33 +2997,26 @@ void MENU_START::eventt()
 	}
 	EndBatchDraw();
 	Game::clear();
-	if(new_data.read_data()==true)
-		new_data.set_data(cyclooctane);
-	else
-	{
-		new_data.fresh_data();
-	}
 	if(gamestatus==1)
 	{	
 		gamestatus=2;
-		int c1=new_data.co_flag;
-		int c2=new_data.co_coin;
-		int c3=new_data.co_ben.ski[0];
-		bool c4=new_data.jud_skin2,c5=new_data.jud_skin3;
-		new_data.fresh_data();
-		new_data.co_flag=c1;
-		new_data.co_coin=c2;
-		new_data.co_ben.ski[0]=c3;
-		new_data.jud_skin3=c5;
-		new_data.jud_skin2=c4;
+		int c1=cyclooctane.flag;
+		int c2=cyclooctane.coin;
+		int c3=cyclooctane.ben.ski[0];
+		bool c4=cyclooctane.jud_skin2,
+			c5=cyclooctane.jud_skin3;
+		cyclooctane.fresh_data();
+		cyclooctane.flag=c1;
+		cyclooctane.coin=c2;
+		cyclooctane.ben.ski[0]=c3;
+		cyclooctane.jud_skin3=c5;
+		cyclooctane.jud_skin2=c4;
 	}
 	else if(gamestatus==2)
 	{
 		gamestatus=3;
-		if(new_data.read_data()!=true || new_data.on_game==false)
+		if(cyclooctane.read_data()!=true || cyclooctane.on_game==false)
 			gamestatus=1;
-		else
-			new_data.set_data(cyclooctane);
 	}
 	else if(gamestatus==4)
 		gamestatus=6;
@@ -3017,7 +3040,9 @@ State* MENU_CHA::transition(int x)
 }  
 void MENU_CHA::eventt()
 {
-	new_data.co_coin=999;
+	/////////////////////////////////////
+	cyclooctane.coin=999;
+	////////////////////////////////////
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_ben=L"Benzene";
 	LPCTSTR str_cyc=L"Cyclohexadiene";
@@ -3039,7 +3064,7 @@ void MENU_CHA::eventt()
 	settextstyle(40,15,_T("微软雅黑"));  settextcolor(RGB(255,0,255));
 	outtextxy(690,820,str_cha2);
 	outtextxy(1140,820,str_cha3);
-	if( new_data.jud_skin2==false || new_data.jud_skin3==false )
+	if( cyclooctane.jud_skin2==false || cyclooctane.jud_skin3==false )
 	{
 		LOGFONT f;
 		gettextstyle(&f); 
@@ -3050,12 +3075,12 @@ void MENU_CHA::eventt()
 		settextstyle(&f);   
 		settextcolor(RGB(255,255,0));
 		TCHAR s1[10]; 
-		_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+		_stprintf(s1,_T("金币：%d"),cyclooctane.coin);
 		outtextxy(80+100,350+20,s1);
 		putimage(80,350,&img_coin1);
-		if(new_data.jud_skin2==false)
+		if(cyclooctane.jud_skin2==false)
 			outtextxy(650,750,str_lock2);
-		if(new_data.jud_skin3==false)
+		if(cyclooctane.jud_skin3==false)
 			outtextxy(1100,750,str_lock3);
 	}
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
@@ -3079,20 +3104,20 @@ void MENU_CHA::eventt()
 			char aaa=_getch();
 			if(aaa=='\r') 
 			{	
-				if(tem_mod==1 || (tem_mod==2&&new_data.jud_skin2==true) || (tem_mod==3&&new_data.jud_skin3==true))
+				if(tem_mod==1 || (tem_mod==2&&cyclooctane.jud_skin2==true) || (tem_mod==3&&cyclooctane.jud_skin3==true))
 				{
 					gamestatus=8;
 					break;
 				}
-				if(new_data.co_coin<20)
+				if(cyclooctane.coin<20)
 				{
 					tem_mod=1; 
 				}
 				else if(tem_mod==2)
 				{
-					new_data.jud_skin2=true;
-					new_data.co_coin-=20;
-					new_data.write_data();
+					cyclooctane.jud_skin2=true;
+					cyclooctane.coin-=20;
+					cyclooctane.write_data();
 					putimage(300,370,&img_empt);
 					putimage(650,750,&img_empt);
 					LOGFONT f;
@@ -3104,16 +3129,16 @@ void MENU_CHA::eventt()
 					settextstyle(&f);   
 					settextcolor(RGB(255,255,0));
 					TCHAR s1[10]; 
-					_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+					_stprintf(s1,_T("金币：%d"),cyclooctane.coin);
 					outtextxy(80+100,350+20,s1);
 					putimage(80,350,&img_coin1);
 					continue;
 				}
 				else if(tem_mod==3)
 				{
-					new_data.jud_skin3=true;
-					new_data.co_coin-=20;
-					new_data.write_data();
+					cyclooctane.jud_skin3=true;
+					cyclooctane.coin-=20;
+					cyclooctane.write_data();
 					putimage(1100,750,&img_empt);
 					putimage(300,370,&img_empt);
 					LOGFONT f;
@@ -3125,7 +3150,7 @@ void MENU_CHA::eventt()
 					settextstyle(&f);   
 					settextcolor(RGB(255,255,0));
 					TCHAR s1[10]; 
-					_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+					_stprintf(s1,_T("金币：%d"),cyclooctane.coin);
 					outtextxy(80+100,350+20,s1);
 					putimage(80,350,&img_coin1);
 					continue;
@@ -3156,9 +3181,9 @@ void MENU_CHA::eventt()
 		FlushBatchDraw();
 	}
 	EndBatchDraw();
-	new_data.co_ben.mod=tem_mod;
-	new_data.co_ben.set_new_data(new_data.co_ben.mod);
-	new_data.write_data();
+	cyclooctane.ben.mod=tem_mod;
+	cyclooctane.ben.set_new_data(cyclooctane.ben.mod);
+	cyclooctane.write_data();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 }
@@ -3177,7 +3202,7 @@ State* MENU_SKILL::transition(int x)
 }  
 void MENU_SKILL::eventt()
 {
-	new_data.read_data();
+	cyclooctane.read_data();
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_c1=L"抽取";
 	LPCTSTR str_c2=L"重新抽取 ( $ 5 )";
@@ -3208,7 +3233,7 @@ void MENU_SKILL::eventt()
 	settextstyle(&f);   
 	TCHAR s1[10]; 
 	settextcolor(RGB(255,255,0));
-	_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+	_stprintf(s1,_T("金币：%d"),cyclooctane.coin);
 	outtextxy(80+100,350+420,s1);
 	putimage(80,350+400,&img_coin1);
 	FlushBatchDraw();
@@ -3225,20 +3250,20 @@ void MENU_SKILL::eventt()
 			char aaa=_getch();
 			if(aaa=='\r') 
 			{	
-				if(new_data.co_flag==0)
+				if(cyclooctane.flag==0)
 				{
 					if(tem_state!=1) 
 					{	
 						tem_state=1;
 						continue;
 					}
-					new_data.co_flag=1;
-					new_data.co_ben.ski[0]=rand()%6+1;
+					cyclooctane.flag=1;
+					cyclooctane.ben.ski[0]=rand()%6+1;
 					f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
 					settextcolor(RGB(255,255,0));
 					outtextxy(480,400,str_c4);
 					putimage(760,400,&img_empt);
-					switch(new_data.co_ben.ski[0])
+					switch(cyclooctane.ben.ski[0])
 					{
 					case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
 					case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
@@ -3247,12 +3272,11 @@ void MENU_SKILL::eventt()
 					case 5: outtextxy(760,400,str_ski5); putimage(800,500,&img_ski5);break;
 					case 6: outtextxy(760,400,str_ski6); putimage(800,500,&img_ski6); break;
 					}
-					new_data.write_data();
-					new_data.set_data(cyclooctane);
+					cyclooctane.write_data();
 				}
 				else
 				{
-					if(tem_state==1 || (tem_state==2&&(new_data.co_coin<5)))
+					if(tem_state==1 || (tem_state==2&&(cyclooctane.coin<5)))
 					{
 						tem_state=3;
 						continue;
@@ -3262,19 +3286,19 @@ void MENU_SKILL::eventt()
 						gamestatus=3;
 						break;
 					}
-					if(new_data.co_coin>=5)
+					if(cyclooctane.coin>=5)
 					{
-						int ccc=new_data.co_ben.ski[0];
-						while(ccc==new_data.co_ben.ski[0])
+						int ccc=cyclooctane.ben.ski[0];
+						while(ccc==cyclooctane.ben.ski[0])
 						{
 							ccc=rand()%6+1;
 						}
-						new_data.co_ben.ski[0]=ccc;
+						cyclooctane.ben.ski[0]=ccc;
 						f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
 						settextcolor(RGB(255,255,0));
 						outtextxy(480,400,str_c4);
 						putimage(760,400,&img_empt);
-						switch(new_data.co_ben.ski[0])
+						switch(cyclooctane.ben.ski[0])
 						{
 						case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
 						case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
@@ -3283,16 +3307,15 @@ void MENU_SKILL::eventt()
 						case 5: outtextxy(760,400,str_ski5); putimage(800,500,&img_ski5);break;
 						case 6: outtextxy(760,400,str_ski6); putimage(800,500,&img_ski6); break;
 						}
-						new_data.co_coin-=5;
+						cyclooctane.coin-=5;
 						f.lfHeight = 35;  
 						f.lfWidth=20;
 						settextstyle(&f);   
 						TCHAR s1[10]; 
-						_stprintf(s1,_T("金币：%d"),new_data.co_coin);
+						_stprintf(s1,_T("金币：%d"),cyclooctane.coin);
 						putimage(290,340+420,100,100,&img_empt,0,0);
 						outtextxy(80+100,350+420,s1);
-						new_data.write_data();
-						new_data.set_data(cyclooctane);
+						cyclooctane.write_data();
 					}
 				}
 				
@@ -3305,13 +3328,13 @@ void MENU_SKILL::eventt()
 					tem_state=tem_state<3?tem_state+1:1;
 			}
 		}
-		if(new_data.co_flag!=0)
+		if(cyclooctane.flag!=0)
 		{
 			f.lfHeight = 50;   f.lfWidth=28;  settextstyle(&f);   
 			settextcolor(RGB(255,255,0));
 			outtextxy(480,400,str_c4);
 			putimage(760,400,&img_empt);
-			switch(new_data.co_ben.ski[0])
+			switch(cyclooctane.ben.ski[0])
 			{
 			case 1: outtextxy(760,400,str_ski1); putimage(800,500,&img_ski1); break;
 			case 2: outtextxy(760,400,str_ski2); putimage(800,500,&img_ski2);break;
@@ -3338,9 +3361,8 @@ void MENU_SKILL::eventt()
 		FlushBatchDraw();
 	}
 	EndBatchDraw();
-	new_data.co_ben.cur=0;
-	new_data.write_data();
-	new_data.set_data(cyclooctane);
+	cyclooctane.ben.cur=0;
+	cyclooctane.write_data();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 }
@@ -3362,9 +3384,7 @@ State* ON_GAME::transition(int x)
 void ON_GAME::eventt()
 {
 	int gamestatus=3;
-	new_data.set_data(cyclooctane);
-	new_data.on_game=true;
-	//new_data.fresh_data();
+	cyclooctane.on_game=true;
 	Game::clear();
 	while(1)  //  游戏循环执行
 	{
@@ -3392,7 +3412,7 @@ void ON_GAME::eventt()
 		if(cyclooctane.ben.life_now<=0)
 		{
 			cyclooctane.coin+=cyclooctane.room_count-1;
-			new_data.on_game=false;
+			cyclooctane.on_game=false;
 			gamestatus=5; break;
 		}
 		if(cyclooctane.room_count%3==0&&cyclooctane.room_count&&cyclooctane.judge_update==0)
@@ -3403,8 +3423,6 @@ void ON_GAME::eventt()
 
 	}
 	EndBatchDraw();
-	new_data.store_data(cyclooctane);
-	new_data.write_data();
 	Game::clear();
 	FSM::current=transition(gamestatus);
 	return;
@@ -3424,7 +3442,6 @@ State* MENU_PAUSE::transition(int x)
 }  
 void MENU_PAUSE::eventt()
 {
-	new_data.store_data(cyclooctane);
 	int gamestatus=4;
 	int tem_status=1;
 	Game::clear();
@@ -3474,7 +3491,7 @@ void MENU_PAUSE::eventt()
 	else if( tem_status==2)
 	{
 		gamestatus=3;
-		new_data.write_data();
+		cyclooctane.write_data();
 	}
 	else if( tem_status==3 ) 
 		gamestatus=1;
@@ -3505,11 +3522,11 @@ void MENU_DEAD::eventt()
 	LPCTSTR str_score=L"Score : ";
 	LPCTSTR str_judge;
 	int num_judge=0;
-	if(new_data.co_room_count<10)
+	if(cyclooctane.room_count<10)
 	{	str_judge=L"Level : Weak";  num_judge=12;}
-	else if(new_data.co_room_count<30)
+	else if(cyclooctane.room_count<30)
 	{	str_judge=L"Level : Good"; num_judge=12;}
-	else if(new_data.co_room_count<100)
+	else if(cyclooctane.room_count<100)
 	{	str_judge=L"Level : Fantastic"; num_judge=17;}
 	else 
 	{	str_judge=L"Level：???"; num_judge=11;}
@@ -3518,12 +3535,11 @@ void MENU_DEAD::eventt()
 	setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0));
 	setfillcolor(RGB(255,0,0));
 	fillellipse(610,615,620,625);
-	int co_score=new_data.co_room_count; 
+	int score=cyclooctane.room_count; 
 	TCHAR str_sc[10];
-	_stprintf(str_sc,_T("%d"),co_score);
-	new_data.co_flag=0;
-	new_data.write_data();
-
+	_stprintf(str_sc,_T("%d"),score);
+	cyclooctane.flag=0;
+	cyclooctane.write_data();
 	while(1)	
 	{
 		settextstyle(160,60,_T("微软雅黑"));  settextcolor(RGB(255,255,255));
@@ -3591,12 +3607,11 @@ State* SHOP1::transition(int x)
 }  
 void SHOP1::eventt()
 {
-	new_data.store_data(cyclooctane);
-	new_data.write_data();
-	new_data.co_death_count=9999;
-	new_data.set_data(cyclooctane);
+	////////////////////////////////////////
+	cyclooctane.death_count=9999;
+	////////////////////////////////////////
+
 	BeginBatchDraw();
-	
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_title=L"Update";
 	LPCTSTR str_choice1=L"升级人物属性";
@@ -3611,7 +3626,7 @@ void SHOP1::eventt()
 	f.lfWidth=20;
 	settextstyle(&f);   
 	TCHAR s1[10]; 
-	_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+	_stprintf(s1,_T("灵魂：%d"),cyclooctane.death_count);
 	outtextxy(80+100,50+320,s1);
 	putimage(80,50+300,&img_coin2);
 
@@ -3711,7 +3726,7 @@ void SHOP2::eventt()
 	f.lfWidth=20;
 	settextstyle(&f);   
 	TCHAR s1[10]; 
-	_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+	_stprintf(s1,_T("灵魂：%d"),cyclooctane.death_count);
 	outtextxy(80+100,50+320,s1);
 	putimage(80,50+300,&img_coin2);
 if(shop_transport==1)
@@ -3743,25 +3758,22 @@ if(shop_transport==1)
 				tem=tem<3?tem+1:1;
 			if(cc=='\r')
 			{
-				if(tem==1&&new_data.co_death_count>=50)
+				if(tem==1&&cyclooctane.death_count>=50)
 				{
-					new_data.co_death_count-=50;
-					new_data.co_ben.life_now=new_data.co_ben.life;
+					cyclooctane.death_count-=50;
+					cyclooctane.ben.life_now=cyclooctane.ben.life;
 				}
-				else if(tem==2&&new_data.co_death_count>=100)
+				else if(tem==2&&cyclooctane.death_count>=100)
 				{
-					new_data.co_death_count-=100;
-					new_data.co_ben.life+=2;
-					new_data.co_ben.life_now+=2;
+					cyclooctane.death_count-=100;
+					cyclooctane.ben.life+=2;
+					cyclooctane.ben.life_now+=2;
 				}
-				else if(tem==3&&new_data.co_death_count>=70)
+				else if(tem==3&&cyclooctane.death_count>=70)
 				{
-					new_data.co_death_count-=70;
-					new_data.co_ben.speed+=2;
+					cyclooctane.death_count-=70;
+					cyclooctane.ben.speed+=2;
 				}
-				new_data.set_data(cyclooctane);
-				new_data.store_data(cyclooctane);
-				new_data.write_data();
 			}
 
 		}
@@ -3773,7 +3785,7 @@ if(shop_transport==1)
 		f.lfWidth=20;
 		settextstyle(&f);   settextcolor(RGB(255,255,255));
 		TCHAR s1[10]; 
-		_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+		_stprintf(s1,_T("灵魂：%d"),cyclooctane.death_count);
 		outtextxy(80+100,50+320,s1);
 		putimage(80,50+300,&img_coin2);
 		
@@ -3834,14 +3846,14 @@ else if(shop_transport==2)
 				break;
 			}
 			if(cc=='a')
-				if(new_data.co_ben.ski[1]!=0)
+				if(cyclooctane.ben.ski[1]!=0)
 				{
 					if(tem1==1) tem1=2;
 					else tem1=1;
 				}
 			if(cc=='d')
 			{	
-				if(new_data.co_ben.ski[1]!=0)
+				if(cyclooctane.ben.ski[1]!=0)
 				{
 					if(tem1==2) tem1=1;
 					else tem1=2;
@@ -3853,30 +3865,27 @@ else if(shop_transport==2)
 				tem2=tem2<6?tem2+1:1;
 			if(cc=='\r')
 			{
-				if( tem2!=new_data.co_ben.ski[0] && tem2!=new_data.co_ben.ski[1] )
+				if( tem2!=cyclooctane.ben.ski[0] && tem2!=cyclooctane.ben.ski[1] )
 				{
-					if( (tem2==1&&new_data.co_death_count>=200) || (tem2==2&&new_data.co_death_count>=220) || (tem2==3&&new_data.co_death_count>=250) || (tem2==4&&new_data.co_death_count>=250) || (tem2==5&&new_data.co_death_count>=230) || (tem2==6&&new_data.co_death_count>=250))
+					if( (tem2==1&&cyclooctane.death_count>=200) || (tem2==2&&cyclooctane.death_count>=220) || (tem2==3&&cyclooctane.death_count>=250) || (tem2==4&&cyclooctane.death_count>=250) || (tem2==5&&cyclooctane.death_count>=230) || (tem2==6&&cyclooctane.death_count>=250))
 					{
-						if(new_data.co_ben.ski[1]==0)
+						if(cyclooctane.ben.ski[1]==0)
 						{
-							new_data.co_ben.ski[1]=tem2;
+							cyclooctane.ben.ski[1]=tem2;
 						}
 						else
 						{
-							new_data.co_ben.ski[tem1-1]=tem2;
+							cyclooctane.ben.ski[tem1-1]=tem2;
 						}
-						new_data.co_death_count-=200;
+						cyclooctane.death_count-=200;
 						if(tem2==3||tem2==4||tem2==6)
-							new_data.co_death_count-=50;
+							cyclooctane.death_count-=50;
 						if(tem2==2)
-							new_data.co_death_count-=20;
+							cyclooctane.death_count-=20;
 						if(tem2==5)
-							new_data.co_death_count-=30;
+							cyclooctane.death_count-=30;
 					}
 				}
-				new_data.set_data(cyclooctane);
-				new_data.store_data(cyclooctane);
-				new_data.write_data();
 			}
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(0,0,0)); setfillcolor(RGB(0,0,0));
@@ -3898,7 +3907,7 @@ else if(shop_transport==2)
 		f.lfWidth=20;
 		settextstyle(&f);   settextcolor(RGB(255,255,255));
 		TCHAR s1[10]; 
-		_stprintf(s1,_T("灵魂：%d"),new_data.co_death_count);
+		_stprintf(s1,_T("灵魂：%d"),cyclooctane.death_count);
 		outtextxy(80+100,50+320,s1);
 		putimage(80,50+300,&img_coin2);
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB(255,0,0)); setfillcolor(RGB(255,0,0));
@@ -3917,7 +3926,7 @@ else if(shop_transport==2)
 		case 6: fillellipse(1100-30,700+40,1100-15,700+50); break;
 		}
 		settextcolor(RGB(255,50,255));
-		switch(new_data.co_ben.ski[0])
+		switch(cyclooctane.ben.ski[0])
 		{
 		case 1: outtextxy(120,710,str_ski1); putimage(100,600,&img_ski1); break;
 		case 2: outtextxy(110,710,str_ski2); putimage(100,600,&img_ski2);break;
@@ -3926,7 +3935,7 @@ else if(shop_transport==2)
 		case 5: outtextxy(120,710,str_ski5); putimage(100,600,&img_ski5);break;
 		case 6: outtextxy(120,710,str_ski6); putimage(100,600,&img_ski6); break;
 		}
-		switch(new_data.co_ben.ski[1])
+		switch(cyclooctane.ben.ski[1])
 		{
 		case 0: putimage(300,600,&img_ski_null); break;
 		case 1: outtextxy(320,710,str_ski1); putimage(300,600,&img_ski1); break;
@@ -3941,9 +3950,7 @@ else if(shop_transport==2)
 }
 	EndBatchDraw();
 	Game::clear();
-	new_data.set_data(cyclooctane);
-	new_data.store_data(cyclooctane);
-	new_data.write_data();
+	cyclooctane.write_data();
 	FSM::current=transition(gamestatus);
 	return;
 }
@@ -3996,148 +4003,75 @@ void HELP::eventt()
 }
 
 /////////// Data Base ////////////////
-Data_Base::Data_Base()
-{
-	fresh_data();
-}
-Data_Base::~Data_Base()
-{
-}
-void Data_Base::fresh_data()
+void Game::fresh_data()
 {
 	empt.startup();
-	store_data(empt);
-	co_Bullet_num_time_count=0;
-	co_Monster_num_count=0;
-	co_Monster_num_total=0;
-	co_num_monster_fresh=0;
-	co_judge_update=0;
-	co_coin=0;
-	co_flag=0;
+	Bullet_num_time_count=0;
+	num_monster_fresh=0;
+	judge_update=0;
+	death_count=0;
+	coin=0;
+	flag=0;
 	on_game=false;
 	jud_skin2=false;
 	jud_skin3=false;
 	return;
 }
-void Data_Base::store_data(const Game& b)
-{
-	co_ben=b.ben;
-	co_room=b.room;
-	co_square=b.square;
-	co_death_count=b.death_count;
-	co_room_count=b.room_count;
-	co_Bullet_num_time_count=Bullet::num_time_count;
-	co_Monster_num_total=Monster::num_total;
-	co_Monster_num_count=Monster::num_count;
-	co_num_monster_fresh=num_monster_fresh;
-	co_judge_update=b.judge_update;
-	co_coin=b.coin;
-	co_flag=b.flag;
-	return;
-}
-void Data_Base::set_data(Game& a)
-{
-	a.ben=co_ben;
-	a.room=co_room;
-	a.square=co_square;
-	a.room_count=co_room_count;
-	a.death_count=co_death_count;
-	Bullet::num_time_count=co_Bullet_num_time_count;
-	Monster::num_total=co_Monster_num_total;
-	Monster::num_count=co_Monster_num_count;
-	num_monster_fresh=co_num_monster_fresh;
-	a.judge_update=co_judge_update;
-	a.coin=co_coin;
-	a.flag=co_flag;
-	return;
-}
-bool Data_Base::read_data()
+bool Game::read_data()
 {
 	/*Decrypt_file("save01.data", "save03.data");*/
 	ifstream load_data("save01.data",ios::in);
 	if( !load_data.is_open())
 		return false;
+
+	load_data.read( (char *)&ben.mod,sizeof(ben.mod) );
+	load_data.read( (char *)&ben.pos_x,sizeof(ben.pos_x) );
+	load_data.read( (char *)&ben.pos_y,sizeof(ben.pos_y) );
+	load_data.read( (char *)&ben.judge_dir,sizeof(ben.judge_dir) );
+	load_data.read( (char *)&ben.judge_hurt,sizeof(ben.judge_hurt) );
+	load_data.read( (char *)&ben.line,sizeof(ben.line) );
+	load_data.read( (char *)&ben.last_line,sizeof(ben.last_line) );
+	load_data.read( (char *)&ben.special,sizeof(ben.special) );
+	load_data.read( (char *)&ben.last_special,sizeof(ben.last_special) );
+	load_data.read( (char *)&ben.num_bul,sizeof(ben.num_bul) );
+	load_data.read( (char *)&ben.speed,sizeof(ben.speed) );
+	load_data.read( (char *)&ben.life,sizeof(ben.life) );
+	load_data.read( (char *)&ben.life_now,sizeof(ben.life_now) );
+	load_data.read( (char *)&ben.print_chara,sizeof(ben.print_chara) );
+	load_data.read( (char *)&ben.ski,sizeof(ben.ski) );
+	load_data.read( (char *)&ben.cur,sizeof(ben.cur) );
+	load_data.read( (char *)&ben.num_count,sizeof(ben.num_count) );
+
 	load_data.read( (char *)&(current_state),sizeof(current_state) );
-	load_data.read( (char *)&(co_judge_update),sizeof(co_judge_update) );
-	load_data.read( (char *)&(co_death_count),sizeof(co_death_count) );
-	load_data.read( (char *)&(co_Bullet_num_time_count),sizeof(co_Bullet_num_time_count) );
-	load_data.read( (char *)&(co_Monster_num_total),sizeof(co_Monster_num_total) );
-	load_data.read( (char *)&(co_num_monster_fresh),sizeof(co_num_monster_fresh) );
-	load_data.read( (char *)&(co_room_count),sizeof(co_room_count) );
-	load_data.read( (char *)&(co_Monster_num_count),sizeof(co_Monster_num_count) );
-	load_data.read( (char *)&(co_coin),sizeof(co_coin) );
-	load_data.read( (char *)&(co_flag),sizeof(co_flag) );
+	load_data.read( (char *)&(judge_update),sizeof(judge_update) );
+	load_data.read( (char *)&(death_count),sizeof(death_count) );
+	load_data.read( (char *)&(Bullet_num_time_count),sizeof(Bullet_num_time_count) );
+	load_data.read( (char *)&(num_monster_fresh),sizeof(num_monster_fresh) );
+	load_data.read( (char *)&(room_count),sizeof(room_count) );
+	load_data.read( (char *)&(coin),sizeof(coin) );
+	load_data.read( (char *)&(flag),sizeof(flag) );
 	load_data.read( (char *)&(on_game),sizeof(on_game) );
 	load_data.read( (char *)&(jud_skin2),sizeof(jud_skin2) );
 	load_data.read( (char *)&(jud_skin3),sizeof(jud_skin3) );
-	load_data.read( (char *)&(co_square),sizeof(co_square) );  
-	
-	load_data.read( (char *)&co_room.monster,sizeof(co_room.monster) );
-	load_data.read( (char *)&co_room.door,sizeof(co_room.door) );
-	load_data.read( (char *)&co_room.num_stab,sizeof(co_room.num_stab) );
-	load_data.read( (char *)&co_room.num_stone,sizeof(co_room.num_stone) );
-	load_data.read( (char *)&co_room.time_count,sizeof(co_room.time_count) );
-	load_data.read( (char *)&co_room.rand_c,sizeof(co_room.rand_c) );
-	load_data.read( (char *)&co_room.time_max,sizeof(co_room.time_max) );
-	if(co_room.num_stab<10)
-		co_room.stab = new Stab [co_room.num_stab];
-	for(int i=0; i<co_room.num_stab; i++)
-	{
-		load_data.read( (char *)&co_room.stab[i].pos_x,sizeof(co_room.stab[i].pos_x) );
-		load_data.read( (char *)&co_room.stab[i].pos_y,sizeof(co_room.stab[i].pos_y) );
-		load_data.read( (char *)&co_room.stab[i].init,sizeof(co_room.stab[i].init) );
-		load_data.read( (char *)&co_room.stab[i].dis,sizeof(co_room.stab[i].dis) );
-		load_data.read( (char *)&co_room.stab[i].count,sizeof(co_room.stab[i].count) );
-		load_data.read( (char *)&co_room.stab[i].stab,sizeof(co_room.stab[i].stab) );
-		load_data.read( (char *)&co_room.stab[i].judge_show,sizeof(co_room.stab[i].judge_show) );
-		load_data.read( (char *)&co_room.stab[i].count_max,sizeof(co_room.stab[i].count_max) );
-		load_data.read( (char *)&co_room.stab[i].pos,sizeof(co_room.stab[i].pos) );
-//		load_data.read( (char *)&co_room.stab[i].angle,sizeof(co_room.stab[i].angle) );
-		//co_room.stab[i].new_point();
-	}
-	if(co_room.num_stone<10)
-		co_room.stone = new Stone [co_room.num_stone];
-	for(int i=0; i<co_room.num_stone; i++)
-	{
-		load_data.read( (char *)&co_room.stone[i].pos_x,sizeof(co_room.stone[i].pos_x) );
-		load_data.read( (char *)&co_room.stone[i].pos_y,sizeof(co_room.stone[i].pos_y) );
-		load_data.read( (char *)&co_room.stone[i].init,sizeof(co_room.stone[i].init) );
-		load_data.read( (char *)&co_room.stone[i].dis,sizeof(co_room.stone[i].dis) );
-		load_data.read( (char *)&co_room.stone[i].pos,sizeof(co_room.stone[i].pos) );
-//		load_data.read( (char *)&co_room.stone[i].angle,sizeof(co_room.stone[i].angle) );
-		//co_room.stone[i].new_point();
-	}
+	load_data.read( (char *)&(square),sizeof(square) );  
+	load_data.read( (char *)&room,sizeof(room) );
 
-	load_data.read( (char *)&co_ben.pos_x,sizeof(co_ben.pos_x) );
-	load_data.read( (char *)&co_ben.pos_y,sizeof(co_ben.pos_y) );
-	load_data.read( (char *)&co_ben.judge_dir,sizeof(co_ben.judge_dir) );
-	load_data.read( (char *)&co_ben.judge_hurt,sizeof(co_ben.judge_hurt) );
-	load_data.read( (char *)&co_ben.line,sizeof(co_ben.line) );
-	load_data.read( (char *)&co_ben.last_line,sizeof(co_ben.last_line) );
-	load_data.read( (char *)&co_ben.special,sizeof(co_ben.special) );
-	load_data.read( (char *)&co_ben.last_special,sizeof(co_ben.last_special) );
-	load_data.read( (char *)&co_ben.num_bul,sizeof(co_ben.num_bul) );
-	load_data.read( (char *)&co_ben.speed,sizeof(co_ben.speed) );
-	load_data.read( (char *)&co_ben.life,sizeof(co_ben.life) );
-	load_data.read( (char *)&co_ben.life_now,sizeof(co_ben.life_now) );
-	load_data.read( (char *)&co_ben.print_chara,sizeof(co_ben.print_chara) );
-	load_data.read( (char *)&co_ben.mod,sizeof(co_ben.mod) );
-	load_data.read( (char *)&co_ben.ski,sizeof(co_ben.ski) );
-	load_data.read( (char *)&co_ben.cur,sizeof(co_ben.cur) );
-	load_data.read( (char *)&co_ben.num_count,sizeof(co_ben.num_count) );
-	co_ben.head=new Bullet;
-	co_ben.head->exist=false;
-	co_ben.head->nex=NULL;
-	co_ben.last=co_ben.head;
+	Bullet::num_time_count=Bullet_num_time_count;
+
+
+	ben.head=new Bullet;
+	ben.head->exist=false;
+	ben.head->nex=NULL;
+	ben.last=ben.head;
 	Bullet *bul;
-	for(int i=0; i<co_ben.num_bul; i++)
+	for(int i=0; i<ben.num_bul; i++)
 	{
 		bul=new Bullet;
 		load_data.read( (char *)&(*bul),sizeof(*bul) );
-		co_ben.last->nex=bul;
-		co_ben.last=co_ben.last->nex;
+		ben.last->nex=bul;
+		ben.last=ben.last->nex;
 	}
-	co_ben.last->nex=NULL;
+	ben.last->nex=NULL;
 	load_data.close();
 
 	/*ofstream te;
@@ -4147,7 +4081,7 @@ bool Data_Base::read_data()
 	te.close();*/
 	return true;
 }
-void Data_Base::write_data()
+void Game::write_data()
 {
 	fstream save_data;
 	save_data.open("save01.data", ios::out);
@@ -4158,79 +4092,50 @@ void Data_Base::write_data()
 	else if(FSM::current==&s5) {current_state=5;}
 	else if(FSM::current==&s7) {current_state=7;}
 	else {current_state=6;}
+	Bullet_num_time_count=Bullet::num_time_count;
+
+	save_data.write( (char *)&ben.mod,sizeof(ben.mod) );
+	save_data.write( (char *)&ben.pos_x,sizeof(ben.pos_x) );
+	save_data.write( (char *)&ben.pos_y,sizeof(ben.pos_y) );
+	save_data.write( (char *)&ben.judge_dir,sizeof(ben.judge_dir) );
+	save_data.write( (char *)&ben.judge_hurt,sizeof(ben.judge_hurt) );
+	save_data.write( (char *)&ben.line,sizeof(ben.line) );
+	save_data.write( (char *)&ben.last_line,sizeof(ben.last_line) );
+	save_data.write( (char *)&ben.special,sizeof(ben.special) );
+	save_data.write( (char *)&ben.last_special,sizeof(ben.last_special) );
+	save_data.write( (char *)&ben.num_bul,sizeof(ben.num_bul) );
+	save_data.write( (char *)&ben.speed,sizeof(ben.speed) );
+	save_data.write( (char *)&ben.life,sizeof(ben.life) );
+	save_data.write( (char *)&ben.life_now,sizeof(ben.life_now) );
+	save_data.write( (char *)&ben.print_chara,sizeof(ben.print_chara) );
+	save_data.write( (char *)&ben.ski,sizeof(ben.ski) );
+	save_data.write( (char *)&ben.cur,sizeof(ben.cur) );
+	save_data.write( (char *)&ben.num_count,sizeof(ben.num_count) );
 
 	save_data.write((char *)&current_state, sizeof(current_state) );
-	save_data.write((char *)&co_judge_update, sizeof(co_judge_update) );
-	save_data.write((char *)&co_death_count, sizeof(co_death_count) );
-	save_data.write((char *)&co_Bullet_num_time_count, sizeof(co_Bullet_num_time_count) );
-	save_data.write((char *)&co_Monster_num_total, sizeof(co_Monster_num_total) );
-	save_data.write((char *)&co_num_monster_fresh, sizeof(co_num_monster_fresh) );
-	save_data.write((char *)&co_room_count, sizeof(co_room_count) );
-	save_data.write((char *)&co_Monster_num_count, sizeof(co_Monster_num_count) );
-	save_data.write( (char *)&co_coin,sizeof(co_coin) );
-	save_data.write( (char *)&co_flag,sizeof(co_flag) );
+	save_data.write((char *)&judge_update, sizeof(judge_update) );
+	save_data.write((char *)&death_count, sizeof(death_count) );
+	save_data.write((char *)&Bullet_num_time_count, sizeof(Bullet_num_time_count) );
+	save_data.write((char *)&num_monster_fresh, sizeof(num_monster_fresh) );
+	save_data.write((char *)&room_count, sizeof(room_count) );
+	save_data.write( (char *)&coin,sizeof(coin) );
+	save_data.write( (char *)&flag,sizeof(flag) );
 	save_data.write( (char *)&on_game,sizeof(on_game) );
 	save_data.write( (char *)&jud_skin2,sizeof(jud_skin2) );
 	save_data.write( (char *)&jud_skin3,sizeof(jud_skin3) );
-	save_data.write( (char *)&co_square,sizeof(co_square) );
+	save_data.write( (char *)&square,sizeof(square) );
+	save_data.write( (char *)&room,sizeof(room) );
 
-	save_data.write( (char *)&co_room.monster,sizeof(co_room.monster) );
-	save_data.write( (char *)&co_room.door,sizeof(co_room.door) );
-	save_data.write( (char *)&co_room.num_stab,sizeof(co_room.num_stab) );
-	save_data.write( (char *)&co_room.num_stone,sizeof(co_room.num_stone) );
-	save_data.write( (char *)&co_room.time_count,sizeof(co_room.time_count) );
-	save_data.write( (char *)&co_room.rand_c,sizeof(co_room.rand_c) );
-	save_data.write( (char *)&co_room.time_max,sizeof(co_room.time_max) );
-	for(int i=0; i<co_room.num_stab; i++)
-	{
-		save_data.write( (char *)&co_room.stab[i].pos_x,sizeof(co_room.stab[i].pos_x) );
-		save_data.write( (char *)&co_room.stab[i].pos_y,sizeof(co_room.stab[i].pos_y) );
-		save_data.write( (char *)&co_room.stab[i].init,sizeof(co_room.stab[i].init) );
-		save_data.write( (char *)&co_room.stab[i].dis,sizeof(co_room.stab[i].dis) );
-		save_data.write( (char *)&co_room.stab[i].count,sizeof(co_room.stab[i].count) );
-		save_data.write( (char *)&co_room.stab[i].stab,sizeof(co_room.stab[i].stab) );
-		save_data.write( (char *)&co_room.stab[i].judge_show,sizeof(co_room.stab[i].judge_show) );
-		save_data.write( (char *)&co_room.stab[i].count_max,sizeof(co_room.stab[i].count_max) );
-		save_data.write( (char *)&co_room.stab[i].pos,sizeof(co_room.stab[i].pos) );
-//		save_data.write( (char *)&co_room.stab[i].angle,sizeof(co_room.stab[i].angle) );
-	}
-	for(int i=0; i<co_room.num_stone; i++)
-	{
-		save_data.write( (char *)&co_room.stone[i].pos_x,sizeof(co_room.stone[i].pos_x) );
-		save_data.write( (char *)&co_room.stone[i].pos_y,sizeof(co_room.stone[i].pos_y) );
-		save_data.write( (char *)&co_room.stone[i].init,sizeof(co_room.stone[i].init) );
-		save_data.write( (char *)&co_room.stone[i].dis,sizeof(co_room.stone[i].dis) );
-		save_data.write( (char *)&co_room.stone[i].pos,sizeof(co_room.stone[i].pos) );
-//		save_data.write( (char *)&co_room.stone[i].angle,sizeof(co_room.stone[i].angle) );
-	}
+	
 
-	save_data.write( (char *)&co_ben.pos_x,sizeof(co_ben.pos_x) );
-	save_data.write( (char *)&co_ben.pos_y,sizeof(co_ben.pos_y) );
-	save_data.write( (char *)&co_ben.judge_dir,sizeof(co_ben.judge_dir) );
-	save_data.write( (char *)&co_ben.judge_hurt,sizeof(co_ben.judge_hurt) );
-	save_data.write( (char *)&co_ben.line,sizeof(co_ben.line) );
-	save_data.write( (char *)&co_ben.last_line,sizeof(co_ben.last_line) );
-	save_data.write( (char *)&co_ben.special,sizeof(co_ben.special) );
-	save_data.write( (char *)&co_ben.last_special,sizeof(co_ben.last_special) );
-	save_data.write( (char *)&co_ben.num_bul,sizeof(co_ben.num_bul) );
-	save_data.write( (char *)&co_ben.speed,sizeof(co_ben.speed) );
-	save_data.write( (char *)&co_ben.life,sizeof(co_ben.life) );
-	save_data.write( (char *)&co_ben.life_now,sizeof(co_ben.life_now) );
-	save_data.write( (char *)&co_ben.print_chara,sizeof(co_ben.print_chara) );
-	save_data.write( (char *)&co_ben.mod,sizeof(co_ben.mod) );
-	save_data.write( (char *)&co_ben.ski,sizeof(co_ben.ski) );
-	save_data.write( (char *)&co_ben.cur,sizeof(co_ben.cur) );
-	save_data.write( (char *)&co_ben.num_count,sizeof(co_ben.num_count) );
 
-	Bullet *bul=co_ben.head->nex;
-	for(int i=0; i<co_ben.num_bul; i++)
+	Bullet *bul=ben.head->nex;
+	for(int i=0; i<ben.num_bul; i++)
 	{
 		save_data.write( (char *)&(*bul),sizeof(*bul) );
 		bul=bul->nex;
 	}
 	save_data.close();
-
-
 	/*Encrypt_file("save02.data","save01.data");
 	ofstream te;
 	int t1=0;
