@@ -108,9 +108,7 @@ public:
 
 struct Charactor //角色
 {
-	TCHAR name[15];
 	double pos_x,pos_y;
-	//int judge_cha_state;   //  状态
 	int judge_dir; // 判断此时的常态方向
 	int judge_hurt; // 受伤后无敌一小段时间
 	Bullet *head,*last;     //  技能1：子弹
@@ -160,7 +158,7 @@ struct Obstacle // 障碍
 {
 public:
 	double pos_x,pos_y;//该障碍物的位置
-	double init,dis;//与房间中心的初始角度和距离 (极坐标)
+	double init,dis,angle;//与房间中心的初始角度和距离 (极坐标)
 	POINT pos[5];
 	Obstacle();
 	static const double r;
@@ -213,7 +211,7 @@ public:
 struct Room  // 房间
 {
 public:
-	Room();
+	Room();  
 	~Room();
 	Stab *stab;
 	Stone *stone;
@@ -236,7 +234,7 @@ struct Game
 	Room room;
 	Square square;
 	int death_count;
-	int room_count;
+	static int room_count;
 	bool judge_update;
 	friend struct Data_Base;
 	static int coin;
@@ -378,5 +376,7 @@ double point_to_line(POINT a, POINT head, POINT last); // 点到线段距离
 bool judge_coll_single(POINT first[], int num_first, POINT second[], int num_second, Vector &shadow, double& num_move);  // 碰撞检测
 bool judge_circle_coll(Vector circle_up, Vector circle_down,POINT second[],int num_second);
 bool judge_p_left_right(POINT a, POINT line1, POINT line2);
+int Encrypt_file(char *s_name,char *ans_name);
+int Decrypt_file(char *s_name, char *ans_name);
 
 #endif

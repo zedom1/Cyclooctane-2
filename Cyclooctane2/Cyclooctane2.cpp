@@ -19,6 +19,7 @@ int Monster::num_count=0;
 int Monster::num_total=0;
 int num_monster_fresh=0;
 int Game::coin=0;
+int Game::room_count=0;
 int Data_Base::co_coin=0;
 int Bullet::range[]={0,20,0,400,500,15,0};
 double Bullet::speed[]={0,15,0,0,0,15,22};
@@ -579,11 +580,17 @@ void Game::update_bullet()
 			{
 				bul->life++;
 				if(bul->life>=Bullet::range[bul->cur])
+				{	
 					bul->exist=false;
+					ben.num_bul--;
+				}
 				if(bul->exist==true)
 				{
 					if( ( (bul->pos_x-square.pos_x)*(bul->pos_x-square.pos_x)  )+( (bul->pos_y-square.pos_y)*(bul->pos_y-square.pos_y) )>=350*350*2  )
+					{	
 						bul->exist=false;
+						ben.num_bul--;
+					}
 					bul->print_bul_old(bul->pos_x,bul->pos_y);
 					bul->pos_x+=bul->speed[bul->cur]*cosf(bul->xita);
 					bul->pos_y-=bul->speed[bul->cur]*sinf(bul->xita);
@@ -595,6 +602,7 @@ void Game::update_bullet()
 							if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
 							{	
 								bul->exist=false;
+								ben.num_bul--;
 								room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 								room.monster[i].num_edge--;
 								if(room.monster[i].num_edge<3)
@@ -626,11 +634,12 @@ void Game::update_bullet()
 				bul=bul->nex;
 			}
 		}
+/*
 		if(ben.head->nex==NULL)
 		{	
 			ben.head->nex=ben.last;
 			ben.last->nex=NULL;
-		}
+		}*/
 	}
 	if(ben.ski[ben.cur]==3 || ben.ski[ben.cur]==4)
 	{
@@ -1580,14 +1589,20 @@ void Room::new_room(int a)
 void Room::update_monster(int x, int y, Square square)
 {
 	num_monster_fresh++;
-	if(num_monster_fresh>10)
+	double cc;
+	if(Game::room_count<=15)
+		cc=4*sin(Game::room_count*1.0)-1*Game::room_count*1.0+17-2*cos(2*Game::room_count*1.0);
+	else 
+		cc=1*sin(Game::room_count*1.0)+3-2*cos(2*Game::room_count*1.0);
+	if(num_monster_fresh>  cc   ) // 4*sin(x)-1*x+17-2*cos(2*x)    x<=15
+		// 1*sin(x)+3-2*cos(2*x)
 	{	
 		num_monster_fresh=0;
 		monster[Monster::num_count++].create_new_monster(x,y,square);
 		Monster::num_total++;
 		if(Monster::num_count>400)
 			Monster::num_count=0;
-	}
+	}   //   a+b=20    5a+b=10   -2.5   22.5
 	for(int i=0 ; i<400; i++)
 		if(monster[i].exist==true)
 		{
@@ -1605,7 +1620,7 @@ void Room::update_monster(int x, int y, Square square)
 			monster[i].pos_y+= tem.y*monster[i].speed;
 			monster[i].print_now(monster[i].pos_x,monster[i].pos_y,monster[i].num_edge,monster[i].pos);
 			if(time_count>=time_max) 
-				monster[i].speed+=0.05;
+				monster[i].speed+=0.02;
 		}
 	return;
 }
@@ -2038,6 +2053,7 @@ void Charactor::updateWithInput(double x,double y,POINT print_chara[])
 		}
 		if(ski[cur]==1)
 		{
+			num_bul++;
 			if(GetAsyncKeyState(VK_UP)<0) 
 			{	
 				last->nex=new Bullet(pos_x,pos_y-25,pi/2);
@@ -2211,14 +2227,12 @@ void Charactor::set_new_data(int md)
 {
 	pos_x=1100; 
 	pos_y=680;
-	//judge_cha_state=false;
 	judge_hurt=-1;
 	judge_dir=1;
 	ski[1]=ski[2]=ski[3]=ski[4]=0;
 	cur=0;
 	new_point(pos_x,pos_y,print_chara);
 	memset(num_count,0,sizeof(num_count));
-	memset(name,0,sizeof(name));
 	num_count[3]=-1;
 	num_bul=0;
 	life_now=life=10;
@@ -2226,7 +2240,6 @@ void Charactor::set_new_data(int md)
 	special.r=30;
 	head=new Bullet;
 	head->exist=false;
-	last=head;
 	head->nex=NULL;
 	last=head;
 
@@ -2549,14 +2562,30 @@ void Monster::print_old(int x, int y, int num, POINT pos[])
 void Monster::create_new_monster(int x,int y, Square square)
 {
 	exist=true;
-	int rand1=rand()%2==0?1:-1,rand2=rand()%2==0?1:-1;
-	special=rand()%15;
-	switch(special)
+	double cc=0.85 - exp(-0.2*Game::room_count*1.0)+0.06*sin(-2*Game::room_count*1.0)+0.06*cos(-2*Game::room_count*1.0);
+	cc=abs(cc)*100;
+	// special==1\2\3 speed==8          special==0,speed=5
+	if(  Game::room_count==5 || Game::room_count==10 || Game::room_count==14  || (Game::room_count>15&&Game::room_count%5==0)   )
 	{
-	case 1: case 2:  speed=8; break;
-	case 3: speed=7; break;
-	default: special=0; speed=5;
+		int rs=rand()%3+1;
+		speed=8;
+		special=rs;
 	}
+	else
+	{
+		int r_tem=rand()%100+1;
+		if(r_tem>=cc)
+		{
+			special=0; speed=5;
+		}
+		else
+		{
+			int rs=rand()%3+1;
+			speed=8;
+			special=rs;
+		}
+	}
+	int rand1=rand()%2==0?1:-1,rand2=rand()%2==0?1:-1;
 	int flag=1;
 	while( flag>0 )
 	{
@@ -2583,15 +2612,16 @@ void Obstacle::print_old()
 	setfillcolor(RGB(0,0,0));
 	fillrectangle(pos_x-r,pos_y-r,pos_x+r,pos_y+r );
 }
-void Obstacle::new_center(double angle)
+void Obstacle::new_center(double angle1)
 {
-	pos_x=900+dis*(cosf(angle+init));
-	pos_y=495-dis*(sinf(angle+init));
+	angle=angle1;
+	pos_x=900+dis*(cosf(init+angle));
+	pos_y=495-dis*(sinf(init+angle));
 	new_point();
 }
 Obstacle::Obstacle()
 {
-	
+	angle=0;
 }
 
 Stab::Stab()
@@ -2688,6 +2718,7 @@ void Stab::reset()
 		else
 			init=pi-init;
 	}
+	angle=0;
 	dis=sqrt( (900-pos_x)*(900-pos_x) + (495-pos_y)*(495-pos_y) );
 }
 void Stab::fresh_point()
@@ -2787,6 +2818,7 @@ void Stone::reset()
 		else
 			init=pi-init;
 	}
+	angle=0;
 	dis=sqrt( (900-pos_x)*(900-pos_x) + (495-pos_y)*(495-pos_y) );
 }
 void Stone::fresh_point()
@@ -2960,7 +2992,7 @@ void MENU_START::eventt()
 		gamestatus=3;
 		if(new_data.read_data()!=true || new_data.on_game==false)
 			gamestatus=1;
-		else if(new_data.on_game==true)
+		else
 			new_data.set_data(cyclooctane);
 	}
 	else if(gamestatus==4)
@@ -4021,34 +4053,104 @@ void Data_Base::set_data(Game& a)
 }
 bool Data_Base::read_data()
 {
-	ifstream load_data("save01.data",ios::in|ios::binary);
+	/*Decrypt_file("save01.data", "save03.data");*/
+	ifstream load_data("save01.data",ios::in);
 	if( !load_data.is_open())
-	{  return false;}
-	fresh_data();
-	load_data.read((char *)&current_state, sizeof(current_state) );
-	load_data.read((char *)&co_judge_update, sizeof(co_judge_update) );
-	load_data.read((char *)&co_death_count, sizeof(co_death_count) );
-	load_data.read((char *)&co_Bullet_num_time_count, sizeof(co_Bullet_num_time_count) );
-	load_data.read((char *)&co_Monster_num_total, sizeof(co_Monster_num_total) );
-	load_data.read((char *)&co_num_monster_fresh, sizeof(co_num_monster_fresh) );
-	load_data.read((char *)&co_room_count, sizeof(co_room_count) );
-	load_data.read((char *)&co_Monster_num_count, sizeof(co_Monster_num_count) );
+		return false;
+	load_data.read( (char *)&(current_state),sizeof(current_state) );
+	load_data.read( (char *)&(co_judge_update),sizeof(co_judge_update) );
+	load_data.read( (char *)&(co_death_count),sizeof(co_death_count) );
+	load_data.read( (char *)&(co_Bullet_num_time_count),sizeof(co_Bullet_num_time_count) );
+	load_data.read( (char *)&(co_Monster_num_total),sizeof(co_Monster_num_total) );
+	load_data.read( (char *)&(co_num_monster_fresh),sizeof(co_num_monster_fresh) );
+	load_data.read( (char *)&(co_room_count),sizeof(co_room_count) );
+	load_data.read( (char *)&(co_Monster_num_count),sizeof(co_Monster_num_count) );
+	load_data.read( (char *)&(co_coin),sizeof(co_coin) );
+	load_data.read( (char *)&(co_flag),sizeof(co_flag) );
+	load_data.read( (char *)&(on_game),sizeof(on_game) );
+	load_data.read( (char *)&(jud_skin2),sizeof(jud_skin2) );
+	load_data.read( (char *)&(jud_skin3),sizeof(jud_skin3) );
+	load_data.read( (char *)&(co_square),sizeof(co_square) );  
 	
-	load_data.read( (char *)&co_ben,sizeof(co_ben) );
-	load_data.read( (char *)&co_square,sizeof(co_square) );
-	load_data.read( (char *)&co_room,sizeof(co_room) );
-	load_data.read( (char *)&co_coin,sizeof(co_coin) );
-	load_data.read( (char *)&co_flag,sizeof(co_flag) );
-	load_data.read( (char *)&on_game,sizeof(on_game) );
-	load_data.read( (char *)&jud_skin2,sizeof(jud_skin2) );
-	load_data.read( (char *)&jud_skin3,sizeof(jud_skin3) );
+	load_data.read( (char *)&co_room.monster,sizeof(co_room.monster) );
+	load_data.read( (char *)&co_room.door,sizeof(co_room.door) );
+	load_data.read( (char *)&co_room.num_stab,sizeof(co_room.num_stab) );
+	load_data.read( (char *)&co_room.num_stone,sizeof(co_room.num_stone) );
+	load_data.read( (char *)&co_room.time_count,sizeof(co_room.time_count) );
+	load_data.read( (char *)&co_room.rand_c,sizeof(co_room.rand_c) );
+	load_data.read( (char *)&co_room.time_max,sizeof(co_room.time_max) );
+	if(co_room.num_stab<10)
+		co_room.stab = new Stab [co_room.num_stab];
+	for(int i=0; i<co_room.num_stab; i++)
+	{
+		load_data.read( (char *)&co_room.stab[i].pos_x,sizeof(co_room.stab[i].pos_x) );
+		load_data.read( (char *)&co_room.stab[i].pos_y,sizeof(co_room.stab[i].pos_y) );
+		load_data.read( (char *)&co_room.stab[i].init,sizeof(co_room.stab[i].init) );
+		load_data.read( (char *)&co_room.stab[i].dis,sizeof(co_room.stab[i].dis) );
+		load_data.read( (char *)&co_room.stab[i].count,sizeof(co_room.stab[i].count) );
+		load_data.read( (char *)&co_room.stab[i].stab,sizeof(co_room.stab[i].stab) );
+		load_data.read( (char *)&co_room.stab[i].judge_show,sizeof(co_room.stab[i].judge_show) );
+		load_data.read( (char *)&co_room.stab[i].count_max,sizeof(co_room.stab[i].count_max) );
+		load_data.read( (char *)&co_room.stab[i].pos,sizeof(co_room.stab[i].pos) );
+//		load_data.read( (char *)&co_room.stab[i].angle,sizeof(co_room.stab[i].angle) );
+		//co_room.stab[i].new_point();
+	}
+	if(co_room.num_stone<10)
+		co_room.stone = new Stone [co_room.num_stone];
+	for(int i=0; i<co_room.num_stone; i++)
+	{
+		load_data.read( (char *)&co_room.stone[i].pos_x,sizeof(co_room.stone[i].pos_x) );
+		load_data.read( (char *)&co_room.stone[i].pos_y,sizeof(co_room.stone[i].pos_y) );
+		load_data.read( (char *)&co_room.stone[i].init,sizeof(co_room.stone[i].init) );
+		load_data.read( (char *)&co_room.stone[i].dis,sizeof(co_room.stone[i].dis) );
+		load_data.read( (char *)&co_room.stone[i].pos,sizeof(co_room.stone[i].pos) );
+//		load_data.read( (char *)&co_room.stone[i].angle,sizeof(co_room.stone[i].angle) );
+		//co_room.stone[i].new_point();
+	}
+
+	load_data.read( (char *)&co_ben.pos_x,sizeof(co_ben.pos_x) );
+	load_data.read( (char *)&co_ben.pos_y,sizeof(co_ben.pos_y) );
+	load_data.read( (char *)&co_ben.judge_dir,sizeof(co_ben.judge_dir) );
+	load_data.read( (char *)&co_ben.judge_hurt,sizeof(co_ben.judge_hurt) );
+	load_data.read( (char *)&co_ben.line,sizeof(co_ben.line) );
+	load_data.read( (char *)&co_ben.last_line,sizeof(co_ben.last_line) );
+	load_data.read( (char *)&co_ben.special,sizeof(co_ben.special) );
+	load_data.read( (char *)&co_ben.last_special,sizeof(co_ben.last_special) );
+	load_data.read( (char *)&co_ben.num_bul,sizeof(co_ben.num_bul) );
+	load_data.read( (char *)&co_ben.speed,sizeof(co_ben.speed) );
+	load_data.read( (char *)&co_ben.life,sizeof(co_ben.life) );
+	load_data.read( (char *)&co_ben.life_now,sizeof(co_ben.life_now) );
+	load_data.read( (char *)&co_ben.print_chara,sizeof(co_ben.print_chara) );
+	load_data.read( (char *)&co_ben.mod,sizeof(co_ben.mod) );
+	load_data.read( (char *)&co_ben.ski,sizeof(co_ben.ski) );
+	load_data.read( (char *)&co_ben.cur,sizeof(co_ben.cur) );
+	load_data.read( (char *)&co_ben.num_count,sizeof(co_ben.num_count) );
+	co_ben.head=new Bullet;
+	co_ben.head->exist=false;
+	co_ben.head->nex=NULL;
+	co_ben.last=co_ben.head;
+	Bullet *bul;
+	for(int i=0; i<co_ben.num_bul; i++)
+	{
+		bul=new Bullet;
+		load_data.read( (char *)&(*bul),sizeof(*bul) );
+		co_ben.last->nex=bul;
+		co_ben.last=co_ben.last->nex;
+	}
+	co_ben.last->nex=NULL;
 	load_data.close();
+
+	/*ofstream te;
+	int t1=0;
+	te.open("save03.data", ios::out);
+	te.write((char *)&t1, sizeof(t1) );
+	te.close();*/
 	return true;
 }
 void Data_Base::write_data()
 {
 	fstream save_data;
-	save_data.open("save01.data", ios::out|ios::binary);
+	save_data.open("save01.data", ios::out);
 	if(FSM::current==&s1) {current_state=1;}
 	else if(FSM::current==&s2) {current_state=2;}
 	else if(FSM::current==&s3) {current_state=3;}
@@ -4065,16 +4167,76 @@ void Data_Base::write_data()
 	save_data.write((char *)&co_num_monster_fresh, sizeof(co_num_monster_fresh) );
 	save_data.write((char *)&co_room_count, sizeof(co_room_count) );
 	save_data.write((char *)&co_Monster_num_count, sizeof(co_Monster_num_count) );
-	
-	save_data.write( (char *)&co_ben,sizeof(co_ben) );
-	save_data.write( (char *)&co_square,sizeof(co_square) );
-	save_data.write( (char *)&co_room,sizeof(co_room) );
 	save_data.write( (char *)&co_coin,sizeof(co_coin) );
 	save_data.write( (char *)&co_flag,sizeof(co_flag) );
 	save_data.write( (char *)&on_game,sizeof(on_game) );
 	save_data.write( (char *)&jud_skin2,sizeof(jud_skin2) );
 	save_data.write( (char *)&jud_skin3,sizeof(jud_skin3) );
+	save_data.write( (char *)&co_square,sizeof(co_square) );
+
+	save_data.write( (char *)&co_room.monster,sizeof(co_room.monster) );
+	save_data.write( (char *)&co_room.door,sizeof(co_room.door) );
+	save_data.write( (char *)&co_room.num_stab,sizeof(co_room.num_stab) );
+	save_data.write( (char *)&co_room.num_stone,sizeof(co_room.num_stone) );
+	save_data.write( (char *)&co_room.time_count,sizeof(co_room.time_count) );
+	save_data.write( (char *)&co_room.rand_c,sizeof(co_room.rand_c) );
+	save_data.write( (char *)&co_room.time_max,sizeof(co_room.time_max) );
+	for(int i=0; i<co_room.num_stab; i++)
+	{
+		save_data.write( (char *)&co_room.stab[i].pos_x,sizeof(co_room.stab[i].pos_x) );
+		save_data.write( (char *)&co_room.stab[i].pos_y,sizeof(co_room.stab[i].pos_y) );
+		save_data.write( (char *)&co_room.stab[i].init,sizeof(co_room.stab[i].init) );
+		save_data.write( (char *)&co_room.stab[i].dis,sizeof(co_room.stab[i].dis) );
+		save_data.write( (char *)&co_room.stab[i].count,sizeof(co_room.stab[i].count) );
+		save_data.write( (char *)&co_room.stab[i].stab,sizeof(co_room.stab[i].stab) );
+		save_data.write( (char *)&co_room.stab[i].judge_show,sizeof(co_room.stab[i].judge_show) );
+		save_data.write( (char *)&co_room.stab[i].count_max,sizeof(co_room.stab[i].count_max) );
+		save_data.write( (char *)&co_room.stab[i].pos,sizeof(co_room.stab[i].pos) );
+//		save_data.write( (char *)&co_room.stab[i].angle,sizeof(co_room.stab[i].angle) );
+	}
+	for(int i=0; i<co_room.num_stone; i++)
+	{
+		save_data.write( (char *)&co_room.stone[i].pos_x,sizeof(co_room.stone[i].pos_x) );
+		save_data.write( (char *)&co_room.stone[i].pos_y,sizeof(co_room.stone[i].pos_y) );
+		save_data.write( (char *)&co_room.stone[i].init,sizeof(co_room.stone[i].init) );
+		save_data.write( (char *)&co_room.stone[i].dis,sizeof(co_room.stone[i].dis) );
+		save_data.write( (char *)&co_room.stone[i].pos,sizeof(co_room.stone[i].pos) );
+//		save_data.write( (char *)&co_room.stone[i].angle,sizeof(co_room.stone[i].angle) );
+	}
+
+	save_data.write( (char *)&co_ben.pos_x,sizeof(co_ben.pos_x) );
+	save_data.write( (char *)&co_ben.pos_y,sizeof(co_ben.pos_y) );
+	save_data.write( (char *)&co_ben.judge_dir,sizeof(co_ben.judge_dir) );
+	save_data.write( (char *)&co_ben.judge_hurt,sizeof(co_ben.judge_hurt) );
+	save_data.write( (char *)&co_ben.line,sizeof(co_ben.line) );
+	save_data.write( (char *)&co_ben.last_line,sizeof(co_ben.last_line) );
+	save_data.write( (char *)&co_ben.special,sizeof(co_ben.special) );
+	save_data.write( (char *)&co_ben.last_special,sizeof(co_ben.last_special) );
+	save_data.write( (char *)&co_ben.num_bul,sizeof(co_ben.num_bul) );
+	save_data.write( (char *)&co_ben.speed,sizeof(co_ben.speed) );
+	save_data.write( (char *)&co_ben.life,sizeof(co_ben.life) );
+	save_data.write( (char *)&co_ben.life_now,sizeof(co_ben.life_now) );
+	save_data.write( (char *)&co_ben.print_chara,sizeof(co_ben.print_chara) );
+	save_data.write( (char *)&co_ben.mod,sizeof(co_ben.mod) );
+	save_data.write( (char *)&co_ben.ski,sizeof(co_ben.ski) );
+	save_data.write( (char *)&co_ben.cur,sizeof(co_ben.cur) );
+	save_data.write( (char *)&co_ben.num_count,sizeof(co_ben.num_count) );
+
+	Bullet *bul=co_ben.head->nex;
+	for(int i=0; i<co_ben.num_bul; i++)
+	{
+		save_data.write( (char *)&(*bul),sizeof(*bul) );
+		bul=bul->nex;
+	}
 	save_data.close();
+
+
+	/*Encrypt_file("save02.data","save01.data");
+	ofstream te;
+	int t1=0;
+	te.open("save02.data", ios::out);
+	te.write((char *)&t1, sizeof(t1) );
+	te.close();*/
 	return;
 }
 /////////// FSM ////////////////
@@ -4098,3 +4260,350 @@ void FSM::change(int n)
 	}
 	return;
 }
+
+
+///////  DES ////////
+
+int k[64]={
+	0,0,0,0,1,0,1,0,
+	0,0,1,0,1,0,0,1,
+	1,0,1,0,1,1,1,0,
+	0,1,0,1,0,0,1,1,
+	0,1,1,0,0,1,1,0,
+	1,1,0,1,0,1,1,1,
+	0,1,1,0,0,1,0,0,
+	1,1,1,1,0,1,0,0
+};
+
+int sub_k[16][64];
+
+int IP[] ={  57,49,41,33,25,17,9,1,  
+               59,51,43,35,27,19,11,3,  
+               61,53,45,37,29,21,13,5,  
+               63,55,47,39,31,23,15,7,  
+               56,48,40,32,24,16,8,0,  
+               58,50,42,34,26,18,10,2,  
+               60,52,44,36,28,20,12,4,  
+               62,54,46,38,30,22,14,6};  
+// 结尾置换表  
+int IP_1[] ={39,7,47,15,55,23,63,31,  
+		      38,6,46,14,54,22,62,30,  
+		     37,5,45,13,53,21,61,29,  
+		      36,4,44,12,52,20,60,28,  
+		      35,3,43,11,51,19,59,27,  
+			   34,2,42,10,50,18,58,26,  
+	         33,1,41,9,49,17,57,25,  
+	         32,0,40,8,48,16,56,24}; 
+// 密钥置换表，将64位密钥变成56位  
+int PC_1[] = {56,48,40,32,24,16,8,  
+              0,57,49,41,33,25,17,  
+              9,1,58,50,42,34,26,  
+              18,10,2,59,51,43,35,  
+              62,54,46,38,30,22,14,  
+              6,61,53,45,37,29,21,  
+              13,5,60,52,44,36,28,  
+              20,12,4,27,19,11,3
+};   
+// 压缩置换，将56位密钥压缩成48位子密钥  
+int PC_2[] = {13,16,10,23,0,4,2,27,  
+              14,5,20,9,22,18,11,3,  
+              25,7,15,6,26,19,12,1,  
+              40,51,30,36,46,54,29,39,  
+              50,44,32,46,43,48,38,55,  
+              33,52,45,41,49,35,28,31
+};  
+// 每轮左移的位数  
+int shiftBits[] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};  
+
+// 扩展置换表，将 32位 扩展至 48位  
+int E[] = {
+			31, 0, 1, 2, 3, 4,  
+            3,  4, 5, 6, 7, 8,  
+            7,  8,9,10,11,12,  
+            11,12,13,14,15,16,  
+            15,16,17,18,19,20,  
+            19,20,21,22,23,24,  
+            23,24,25,26,27,28,  
+            27,28,29,30,31, 0
+};  
+
+int S_BOX[8][4][16] = {  
+    {    
+        {14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7},    
+        {0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8},    
+        {4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0},   
+        {15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13}   
+    },  
+    {    
+        {15,1,8,14,6,11,3,4,9,7,2,13,12,0,5,10},    
+        {3,13,4,7,15,2,8,14,12,0,1,10,6,9,11,5},   
+        {0,14,7,11,10,4,13,1,5,8,12,6,9,3,2,15},    
+        {13,8,10,1,3,15,4,2,11,6,7,12,0,5,14,9}    
+    },   
+    {    
+        {10,0,9,14,6,3,15,5,1,13,12,7,11,4,2,8},    
+        {13,7,0,9,3,4,6,10,2,8,5,14,12,11,15,1},    
+        {13,6,4,9,8,15,3,0,11,1,2,12,5,10,14,7},    
+        {1,10,13,0,6,9,8,7,4,15,14,3,11,5,2,12}    
+    },   
+    {    
+        {7,13,14,3,0,6,9,10,1,2,8,5,11,12,4,15},    
+        {13,8,11,5,6,15,0,3,4,7,2,12,1,10,14,9},    
+        {10,6,9,0,12,11,7,13,15,1,3,14,5,2,8,4},    
+        {3,15,0,6,10,1,13,8,9,4,5,11,12,7,2,14}    
+    },  
+    {    
+        {2,12,4,1,7,10,11,6,8,5,3,15,13,0,14,9},    
+        {14,11,2,12,4,7,13,1,5,0,15,10,3,9,8,6},    
+        {4,2,1,11,10,13,7,8,15,9,12,5,6,3,0,14},    
+        {11,8,12,7,1,14,2,13,6,15,0,9,10,4,5,3}    
+    },  
+    {    
+        {12,1,10,15,9,2,6,8,0,13,3,4,14,7,5,11},    
+        {10,15,4,2,7,12,9,5,6,1,13,14,0,11,3,8},    
+        {9,14,15,5,2,8,12,3,7,0,4,10,1,13,11,6},    
+        {4,3,2,12,9,5,15,10,11,14,1,7,6,0,8,13}    
+    },   
+    {    
+        {4,11,2,14,15,0,8,13,3,12,9,7,5,10,6,1},    
+        {13,0,11,7,4,9,1,10,14,3,5,12,2,15,8,6},    
+        {1,4,11,13,12,3,7,14,10,15,6,8,0,5,9,2},    
+        {6,11,13,8,1,4,10,7,9,5,0,15,14,2,3,12}    
+    },   
+    {    
+        {13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7},    
+        {1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2},    
+        {7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8},    
+        {2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11}    
+    }   
+};  
+int P[] = {
+			15,6,19,20,28,11,27,16,  
+            0,14,22,25,4,17,30,9,  
+            1,7,23,13,31,26,2,8,  
+            18,12,29,5,21,10,3,24
+};  
+
+int get_ten1(int *a, int fir, int las)
+{
+	int ans=0,po=1;
+	for(int i=fir; i<=las; i++)
+	{
+		ans+=po*a[i];
+		po*=2;
+	}
+	return ans;
+}
+int get_ten2(int a1, int a2)
+{
+	return a2*1+a1*2;
+}
+
+void f(int * r, int *k, int *ans)
+{
+	int r_tem[48],r_ans[32];
+	for(int i=0; i<48; i++)
+		r_tem[i]=r[E[i]];
+	for(int i=0; i<48; i++)
+		r_tem[i]^=k[i];
+	for(int i=0 ; i<8; i++)   
+	{
+		int x=get_ten2(r_tem[i*6+0],r_tem[i*6+5]);
+		int y=get_ten1(r_tem,i*6+1,i*6+4);
+		int ans1=S_BOX[i][x][y];
+		for(int j=i*4+3; j>=i*4+0; j--)
+		{
+			r_ans[j]=ans1%2;
+			ans1/=2;
+		}
+	}
+	for(int i=0; i<32; i++)
+		ans[i]=r_ans[P[i]];
+	return;
+};
+void initkey()
+{
+	int c[28],d[28],tem[64];
+	//  2.  key
+	for(int j=0; j<56; j++)
+		tem[j]=k[PC_1[j]];
+	for(int j=0; j<28; j++)
+	{	
+		c[j]=tem[j];
+		d[j]=tem[j+28];
+	}
+	for(int i=0; i<16; i++)
+	{
+		for(int k=0; k<shiftBits[i]; k++)
+		{
+			int c1=c[0],d1=d[0];
+			for(int j=27; j>0; j--)
+			{
+				c[j-1]=c[j];
+				d[j-1]=d[j];
+			}
+			d[27]=d1; c[27]=c1;
+		}
+		for(int j=0; j<28; j++)
+		{	
+			tem[j]=c[j];
+			tem[j+28]=d[j];
+		}
+		for(int j=0; j<48; j++)
+			sub_k[i][j]=tem[PC_2[j]];
+	}
+}
+
+void encrypt(char *s, char *ans)  //  s明文   ans 密文
+{
+	int ans1[64];
+	for(int i=0; i<8; i++)
+	{
+		for(int j=0; j<8; j++)
+		{
+			ans1[i*8+j]=(s[i]>>j)&1;
+		}
+	}
+	int s1[64];
+	int l[32],r[32];
+	//  1.  initial
+	for(int i=0; i<64; i++)
+		s1[i]=ans1[IP[i]];
+	for(int i=0; i<32; i++)
+	{	
+		l[i]=s1[i];
+		r[i]=s1[i+32];
+	}
+	initkey();
+	// 4.
+	for(int i=0; i<16; i++)
+	{
+		int ans_t[32],tem;
+		f(r,sub_k[i],ans_t);
+		for(int j=0; j<32; j++)
+		{	
+			tem=r[j];
+			r[j]=l[j]^ans_t[j];
+			l[j]=tem;
+		}
+	}
+	for(int i=0; i<32; i++)
+	{	
+		s1[i]=r[i];
+		s1[i+32]=l[i];
+	}
+	for(int i=0; i<64; i++)
+		ans1[i]=s1[IP_1[i]];
+	for(int i=0; i<8; i++)
+	{
+		int cc=get_ten1(ans1,i*8+0,i*8+7);
+		ans[i]=cc;
+	}
+	return;
+}
+void decrypt(char *s, char *ans) //  s密文   ans 明文
+{
+	int ans1[64];
+	for(int i=0; i<8; i++)
+	{
+		for(int j=0; j<8; j++)
+		{
+			ans1[i*8+j]=(s[i]>>j)&1;
+		}
+	}
+	int s1[64];
+	int l[32],r[32];
+	//  1.  initial
+	for(int i=0; i<64; i++)
+		s1[i]=ans1[IP[i]];
+	for(int i=0; i<32; i++)
+	{	
+		l[i]=s1[i];
+		r[i]=s1[i+32];
+	}
+	// 4.
+	for(int i=15; i>=0; i--)
+	{
+		int ans_t[32],tem;
+		f(r,sub_k[i],ans_t);
+		for(int j=0; j<32; j++)
+		{	
+			tem=r[j];
+			r[j]=l[j]^ans_t[j];
+			l[j]=tem;
+		}
+	}
+	for(int i=0; i<32; i++)
+	{	
+		s1[i]=r[i];
+		s1[i+32]=l[i];
+	}
+	for(int i=0; i<64; i++)
+		ans1[i]=s1[IP_1[i]];
+	for(int i=0; i<8; i++)
+	{
+		int cc=get_ten1(ans1,i*8+0,i*8+7);
+		ans[i]=cc;
+	}
+	return;
+}
+
+int Encrypt_file(char *s_name,char *ans_name)
+{  
+    FILE *s,*ans;  
+    int c;  
+    char s1[8],s2[8];  
+	s = fopen(s_name,"rb");
+	ans = fopen(ans_name,"wb");
+    while(!feof(s))
+	{  
+        if((c = fread(s1,sizeof(char),8,s)) == 8)
+		{  
+            encrypt(s1,s2);  
+            fwrite(s2,sizeof(char),8,ans);    
+        }  
+    }  
+    if(c)
+	{  
+        memset(s1 + c,'\0',7 - c);  
+        s1[7] = 8 - c;  
+        encrypt(s1,s2);  
+        fwrite(s2,sizeof(char),8,ans);  
+    }  
+    fclose(s);  
+    fclose(ans);  
+    return 0;  
+} 
+int Decrypt_file(char *s_name, char *ans_name)
+{  
+    FILE *s, *ans;  
+    int c,cc=0;
+    long flen;  
+    char s1[8],s2[8];  
+    ans = fopen(s_name,"rb");
+	s = fopen(ans_name,"wb");
+    fseek(ans,0,SEEK_END);
+    flen = ftell(ans);
+    rewind(ans); 
+    while(1)
+	{  
+        fread(s2,sizeof(char),8,ans);  
+        decrypt(s2,s1);                         
+        cc += 8;  
+        if(cc < flen)
+            fwrite(s1,sizeof(char),8,s);  
+        else
+            break;  
+    } 
+    if(s1[7] < 8)
+        for(c = 8 - s1[7]; c < 7; c++)
+            if(s1[c] != '\0')
+                break;  
+    if(c == 7)
+        fwrite(s1,sizeof(char),8 - s1[7],s);  
+    else 
+        fwrite(s1,sizeof(char),8,s);  
+    fclose(s);  
+    fclose(ans);  
+    return 0; 
+}  
