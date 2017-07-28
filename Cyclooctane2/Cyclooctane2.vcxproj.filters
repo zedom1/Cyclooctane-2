@@ -96,5 +96,11 @@
     <Image Include="..\..\..\package\jpg\bullet.bmp">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="icon1.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="C:\Users\Shinelon\Desktop\ic.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

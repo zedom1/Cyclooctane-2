@@ -107,6 +107,8 @@
     <Image Include="..\..\..\package\jpg\null.bmp" />
     <Image Include="..\..\..\package\jpg\rotate.bmp" />
     <Image Include="..\..\..\package\jpg\soul.bmp" />
+    <Image Include="C:\Users\Shinelon\Desktop\ic.ico" />
+    <Image Include="icon1.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
