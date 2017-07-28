@@ -135,9 +135,9 @@ bool judge_coll_single(POINT first[], int num_first, POINT second[], int num_sec
 		double maxn_first=MIN_DOUBLE,minx_first=MAX_DOUBLE;
 		double maxn_second=MIN_DOUBLE,minx_second=MAX_DOUBLE;
 		int j=i+1;
-		Vector *v1=new Vector( first[i].x,first[i].y);
-		Vector *v2=new Vector( first[j].x,first[j].y);
-		Vector edge(*v1-*v2);  // 得到第一个图形的一条边向量
+		Vector v1( first[i].x,first[i].y);
+		Vector v2( first[j].x,first[j].y);
+		Vector edge(v1-v2);  // 得到第一个图形的一条边向量
 		edge.vertical();  // 求得边的垂直向量作为投影轴
 		edge.new_normalize();   // 计算投影轴的单位向量
 
@@ -181,9 +181,9 @@ bool judge_coll_single(POINT first[], int num_first, POINT second[], int num_sec
 		double maxn_first=MIN_DOUBLE,minx_first=MAX_DOUBLE;
 		double maxn_second=MIN_DOUBLE,minx_second=MAX_DOUBLE;
 		int j=i+1;
-		Vector *v1=new Vector( second[i].x,second[i].y);
-		Vector *v2=new Vector( second[j].x,second[j].y);
-		Vector edge(*v1-*v2);  // 得到第二个图形的一条边向量
+		Vector v1( second[i].x,second[i].y);
+		Vector v2( second[j].x,second[j].y);
+		Vector edge(v1-v2);  // 得到第二个图形的一条边向量
 		edge.vertical();  // 求得边的垂直向量作为投影轴
 		edge.new_normalize();   // 计算投影轴的单位向量
 
@@ -598,26 +598,28 @@ void Game::update_bullet()
 				{	
 					bul->exist=false;
 					ben.num_bul--;
+					pre_bul->nex=bul->nex;
+					delete bul;
+					bul=pre_bul->nex;
 				}
-				if(bul->exist==true)
+				else if(bul->exist==true)
 				{
-					if( ( (bul->pos_x-square.pos_x)*(bul->pos_x-square.pos_x)  )+( (bul->pos_y-square.pos_y)*(bul->pos_y-square.pos_y) )>=350*350*2  )
-					{	
-						bul->exist=false;
-						ben.num_bul--;
-					}
 					bul->print_bul_old(bul->pos_x,bul->pos_y);
 					bul->pos_x+=bul->speed[bul->cur]*cosf(bul->xita);
 					bul->pos_y-=bul->speed[bul->cur]*sinf(bul->xita);
 					bul->print_bul_new(bul->pos_x,bul->pos_y);
 					judge_bullet(5,8,square.pos,bul->pos_x, bul->pos_y, bul->xita);
 					Vector circle_up(bul->pos_x-bul->r,bul->pos_y-bul->r),circle_down(bul->pos_x+bul->r,bul->pos_y+bul->r);
-					for(int i=0; i<400; i++)
+					int i=0;
+					for(; i<400; i++)
 						if(room.monster[i].exist==true)
 							if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
 							{	
 								bul->exist=false;
 								ben.num_bul--;
+								pre_bul->nex=bul->nex;
+								delete bul;
+								bul=pre_bul->nex;
 								room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 								room.monster[i].num_edge--;
 								if(room.monster[i].num_edge<3)
@@ -631,7 +633,10 @@ void Game::update_bullet()
 								}
 								if(room.monster[i].exist!=false)
 									room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+								break;
 							}
+					if(i<400)
+						continue;
 				}
 				else
 				{
@@ -646,8 +651,14 @@ void Game::update_bullet()
 					}
 				}
 				pre_bul=pre_bul->nex;
+				if(bul==NULL)
+					break;
 				bul=bul->nex;
 			}
+			bul=ben.head;
+			while(bul->nex!=NULL)
+				bul=bul->nex;
+			ben.last=bul;
 		}
 /*
 		if(ben.head->nex==NULL)
@@ -866,31 +877,31 @@ void Game::update_bullet()
 	if(ben.ski[ben.cur]==5) // bomb
 	{
 		if(ben.num_bul==0) return;
-		ben.head->life++;
-		if(ben.head->life==Bullet::range[ben.head->cur])
+		ben.head->nex->life++;
+		if(ben.head->nex->life==Bullet::range[ben.head->nex->cur])
 		{	
-			ben.head->exist=false;
+			ben.head->nex->exist=false;
 			ben.num_bul=0;
-			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+			ben.head->nex->print_bul_old(ben.head->nex->pos_x,ben.head->nex->pos_y);
 			bomb_hurt(1);
+			delete ben.head->nex;
+			ben.head->nex=NULL;
 		}
-		if(ben.head->exist==true)
+		else if(ben.head->nex->exist==true)
 		{
-			if( ( (ben.head->pos_x-square.pos_x)*(ben.head->pos_x-square.pos_x)  )+( (ben.head->pos_y-square.pos_y)*(ben.head->pos_y-square.pos_y) )>=350*350*2  )
-				ben.head->exist=false;
-			ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-			ben.head->pos_x+=ben.head->speed[ben.head->cur]*cosf(ben.head->xita);
-			ben.head->pos_y-=ben.head->speed[ben.head->cur]*sinf(ben.head->xita);
-			ben.head->print_bul_new(ben.head->pos_x,ben.head->pos_y);
-			judge_bullet(5,8,square.pos,ben.head->pos_x, ben.head->pos_y, ben.head->xita);
-			Vector circle_up(ben.head->pos_x-ben.head->r,ben.head->pos_y-ben.head->r),circle_down(ben.head->pos_x+ben.head->r,ben.head->pos_y+ben.head->r);
+			ben.head->nex->print_bul_old(ben.head->nex->pos_x,ben.head->nex->pos_y);
+			ben.head->nex->pos_x+=ben.head->nex->speed[ben.head->nex->cur]*cosf(ben.head->nex->xita);
+			ben.head->nex->pos_y-=ben.head->nex->speed[ben.head->nex->cur]*sinf(ben.head->nex->xita);
+			ben.head->nex->print_bul_new(ben.head->nex->pos_x,ben.head->nex->pos_y);
+			judge_bullet(5,8,square.pos,ben.head->nex->pos_x, ben.head->nex->pos_y, ben.head->nex->xita);
+			Vector circle_up(ben.head->nex->pos_x-ben.head->nex->r,ben.head->nex->pos_y-ben.head->nex->r),circle_down(ben.head->nex->pos_x+ben.head->nex->r,ben.head->nex->pos_y+ben.head->nex->r);
 			for(int i=0; i<400; i++)
 				if(room.monster[i].exist==true)
 					if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
 					{	
-						ben.head->exist=false;
+						ben.head->nex->exist=false;
 						ben.num_bul=0;
-						ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
+						ben.head->nex->print_bul_old(ben.head->nex->pos_x,ben.head->nex->pos_y);
 						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 						room.monster[i].exist=false;
 						if(room.monster[i].special==0)
@@ -899,6 +910,8 @@ void Game::update_bullet()
 							death_count+=3;
 						Monster::num_total--;
 						bomb_hurt(1);
+						delete ben.head->nex;
+						ben.head->nex=NULL;
 						break;
 					}
 		}
@@ -966,30 +979,20 @@ void Game::updateWithInput()
 			{
 				if(ben.last!=ben.head)
 				{
-					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
-					ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-					ben.head->exist=false;
+					Bullet *bul=ben.head->nex,*aft_bul=bul;
 					while(bul!=NULL)
 					{
-						bul->exist=false;
-						{
-							bul->print_bul_old(bul->pos_x,bul->pos_y);
-							if(bul->nex!=NULL)
-							{	
-								pre_bul->nex=bul->nex;
-								if(bul!=NULL)
-									delete bul;
-								bul=pre_bul->nex;
-								continue;
-							}
-						}
-						pre_bul=pre_bul->nex;
-						bul=bul->nex;
+						aft_bul=bul;
+						while(aft_bul->nex!=NULL)
+							aft_bul=aft_bul->nex;
+						aft_bul->exist=false;
+						aft_bul->print_bul_old(aft_bul->pos_x,aft_bul->pos_y);
+						delete aft_bul;
 					}
 				}
 				if(ben.head->nex==NULL)
 				{	
-					ben.head->nex=ben.last;
+					ben.head=ben.last;
 					ben.last->nex=NULL;
 				}
 			}
@@ -1414,30 +1417,20 @@ void Game::fresh_room()
 			{
 				if(ben.last!=ben.head)
 				{
-					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
-					ben.head->print_bul_old(ben.head->pos_x,ben.head->pos_y);
-					ben.head->exist=false;
+					Bullet *bul=ben.head->nex,*aft_bul=bul;
 					while(bul!=NULL)
 					{
-						bul->exist=false;
-						{
-							bul->print_bul_old(bul->pos_x,bul->pos_y);
-							if(bul->nex!=NULL)
-							{	
-								pre_bul->nex=bul->nex;
-								if(bul!=NULL)
-									delete bul;
-								bul=pre_bul->nex;
-								continue;
-							}
-						}
-						pre_bul=pre_bul->nex;
-						bul=bul->nex;
+						aft_bul=bul;
+						while(aft_bul->nex!=NULL)
+							aft_bul=aft_bul->nex;
+						aft_bul->exist=false;
+						aft_bul->print_bul_old(aft_bul->pos_x,aft_bul->pos_y);
+						delete aft_bul;
 					}
 				}
 				if(ben.head->nex==NULL)
 				{	
-					ben.head->nex=ben.last;
+					ben.head=ben.last;
 					ben.last->nex=NULL;
 				}
 			}
@@ -1451,11 +1444,11 @@ void Game::bomb_hurt(int mod)
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB( 255 , 255 , 0 ));
 		setfillcolor(RGB( 255 , 255 , 0 ));
 		ben.num_count[ben.ski[ben.cur]]=0;
-		Vector circle_up(ben.head->pos_x-75,ben.head->pos_y-75),circle_down(ben.head->pos_x+75,ben.head->pos_y+75);
+		Vector circle_up(ben.head->nex->pos_x-75,ben.head->nex->pos_y-75),circle_down(ben.head->nex->pos_x+75,ben.head->nex->pos_y+75);
 		for(int i=0; i<400; i++)
 		{
 			if(room.monster[i].exist==false) continue;
-			if( (room.monster[i].pos_x-ben.head->pos_x)*(room.monster[i].pos_x-ben.head->pos_x)+(room.monster[i].pos_y-ben.head->pos_y)*(room.monster[i].pos_y-ben.head->pos_y)<=75*75  )
+			if( (room.monster[i].pos_x-ben.head->nex->pos_x)*(room.monster[i].pos_x-ben.head->nex->pos_x)+(room.monster[i].pos_y-ben.head->nex->pos_y)*(room.monster[i].pos_y-ben.head->nex->pos_y)<=75*75  )
 			{	
 				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				room.monster[i].exist=false;
@@ -1477,7 +1470,7 @@ void Game::bomb_hurt(int mod)
 				Monster::num_total--;
 			}
 		}
-		if( ( (ben.pos_x-ben.head->pos_x)*(ben.pos_x-ben.head->pos_x)+(ben.pos_y-ben.head->pos_y)*(ben.pos_y-ben.head->pos_y)<=75*75) || ( judge_circle_coll(circle_up,circle_down,ben.print_chara,7)==true  )  )
+		if( ( (ben.pos_x-ben.head->nex->pos_x)*(ben.pos_x-ben.head->nex->pos_x)+(ben.pos_y-ben.head->nex->pos_y)*(ben.pos_y-ben.head->nex->pos_y)<=75*75) || ( judge_circle_coll(circle_up,circle_down,ben.print_chara,7)==true  )  )
 			if(ben.judge_hurt==-1)
 			{
 				ben.judge_hurt++;
@@ -1485,7 +1478,7 @@ void Game::bomb_hurt(int mod)
 			}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB( 255 , 255 , 0 ));
 		setfillcolor(RGB( 255 , 255 , 0 ));
-		fillellipse( ben.head->pos_x-75, ben.head->pos_y-75, ben.head->pos_x+75, ben.head->pos_y+75);
+		fillellipse( ben.head->nex->pos_x-75, ben.head->nex->pos_y-75, ben.head->nex->pos_x+75, ben.head->nex->pos_y+75);
 	}
 	else
 	{
@@ -1837,6 +1830,10 @@ Charactor::Charactor()
 {
 	set_new_data(1);
 }
+Charactor::~Charactor()
+{
+	delete head;
+}
 void Charactor::print_cha_new(double x,double y,POINT print_chara[])
 {
 	if(judge_hurt!=-1) // 受伤时闪烁
@@ -2134,14 +2131,14 @@ void Charactor::updateWithInput(double x,double y,POINT print_chara[])
 			if(num_bul!=0 || (num_count[ski[cur]]<=1 &&num_count[ski[cur]]!=-1 )) return;
 			num_bul=1;
 			if(GetAsyncKeyState(VK_UP)<0) 
-				head=new Bullet(pos_x,pos_y-25,pi/2);
+				head->nex=new Bullet(pos_x,pos_y-25,pi/2);
 			if(GetAsyncKeyState(VK_DOWN)<0) 
-				head=new Bullet(pos_x,pos_y+25,pi*3/2);
+				head->nex=new Bullet(pos_x,pos_y+25,pi*3/2);
 			if(GetAsyncKeyState(VK_LEFT)<0) 
-				head=new Bullet(pos_x-25,pos_y,pi+0.1);
+				head->nex=new Bullet(pos_x-25,pos_y,pi+0.1);
 			if(GetAsyncKeyState(VK_RIGHT)<0) 
-				head=new Bullet(pos_x+25,pos_y,0);
-			head->cur=ski[cur];
+				head->nex=new Bullet(pos_x+25,pos_y,0);
+			head->nex->cur=ski[cur];
 		}
 		if(ski[cur]==6)
 		{

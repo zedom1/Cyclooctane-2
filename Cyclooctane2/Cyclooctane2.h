@@ -120,6 +120,7 @@ struct Charactor //½ÇÉ«
 	int num_count[10];
 public:
 	Charactor();
+	~Charactor();
 	void print_cha_new(double x,double y,POINT print_chara[]);
 	void print_cha_old(double x,double y,POINT print_chara[]);
 	void new_point(double x,double y, POINT print_chara[]);
