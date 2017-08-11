@@ -142,6 +142,7 @@ public:
 	int special;
 	Monster(int num);
 	Monster();
+	Monster *nex;
 	POINT pos[10];
 	POINT path;
 	static int num_total;
@@ -214,7 +215,7 @@ public:
 	~Room();
 	Stab stab[10];
 	Stone stone[10];
-	Monster monster[500];
+	Monster *monster;
 	POINT door[5];
 	int num_stab,num_stone;
 	int time_count;  // 计时 时间一到开门，人物失去攻击能力
@@ -258,12 +259,10 @@ public:
 	void judge_coll_mon_to_mon();
 	void judge_coll_corner(double &pos_x, double& pos_y, POINT second[], int num_second, double center_x, double center_y);
 	void judge_coll_cha_to_obstacle();
-	void judge_coll_mon_to_corner(int i);
 	void judge_coll_mon_to_obstacle();
 	void fresh_map();  // 实时更新地图
 	void fresh_room(); // 房间切换判定
 	void bomb_hurt(int mod); //第三形态普攻爆炸判定
-
 	void fresh_data();  // 重置数据
 	void write_data();    // 存档（从文件）
 	bool read_data();    // 读档（从文件）

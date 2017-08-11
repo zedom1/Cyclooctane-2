@@ -430,7 +430,7 @@ void Game::startup()
 	death_count=0;  // 杀怪计数
 	judge_update=0;
 	room_count=1;
-	room.new_room(room_count);   // 通过房间计数，用于升级
+	room.new_room(0);   // 通过房间计数，用于升级
 }
 void Game::clear()
 {
@@ -610,32 +610,39 @@ void Game::update_bullet()
 					bul->print_bul_new(bul->pos_x,bul->pos_y);
 					judge_bullet(5,8,square.pos,bul->pos_x, bul->pos_y, bul->xita);
 					Vector circle_up(bul->pos_x-bul->r,bul->pos_y-bul->r),circle_down(bul->pos_x+bul->r,bul->pos_y+bul->r);
-					int i=0;
-					for(; i<400; i++)
-						if(room.monster[i].exist==true)
-							if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
+					int flag=0;
+					Monster *tt=room.monster->nex,*pre=room.monster;
+					while(tt)
+					{
+						if( judge_circle_coll(circle_up,circle_down,tt->pos,tt->num_edge)==true  )
+						{	
+							bul->exist=false;
+							ben.num_bul--;
+							pre_bul->nex=bul->nex;
+							delete bul;
+							bul=pre_bul->nex;
+							tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+							tt->num_edge--;
+							if(tt->num_edge<3)
 							{	
-								bul->exist=false;
-								ben.num_bul--;
-								pre_bul->nex=bul->nex;
-								delete bul;
-								bul=pre_bul->nex;
-								room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-								room.monster[i].num_edge--;
-								if(room.monster[i].num_edge<3)
-								{	
-									room.monster[i].exist=false;
-									if(room.monster[i].special==0)
-										death_count++;
-									else
-										death_count+=3;
-									Monster::num_total--;
-								}
-								if(room.monster[i].exist!=false)
-									room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-								break;
+								if(tt->special==0)
+									death_count++;
+								else
+									death_count+=3;
+								Monster::num_total--;
+								pre->nex=tt->nex;
+								delete tt;
+								tt=pre->nex;
 							}
-					if(i<400)
+							else
+								tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+							flag=1;
+							break;
+						}
+						tt=tt->nex;
+						pre=pre->nex;
+					}
+					if(flag==1)
 						continue;
 				}
 				else
@@ -687,28 +694,37 @@ void Game::update_bullet()
 			line1_last=tem;
 			if(ben.ski[ben.cur]==3&&ben.line.exist==true&&Bullet::num_time_count==1)
 			{
-				for(int j=0; j<400; j++)
-				if(room.monster[j].exist==true)
+				Monster *tt=room.monster->nex,*pre=room.monster;
+				int flg=0;
+				while(tt)
 				{
-					for(int k=0; k<room.monster[j].num_edge; k++)
+					flg=0;
+					for(int k=0; k<tt->num_edge; k++)
 					{
-						if(judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],tttem)==true)
+						if(judge_coll_line(line1_head,line1_last,tt->pos[k],tt->pos[k+1],tttem)==true)
 						{
-							room.monster[j].print_old(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
-							room.monster[j].num_edge--;
-							if(room.monster[j].num_edge<3)
+							tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+							tt->num_edge--;
+							if(tt->num_edge<3)
 							{	
-								room.monster[j].exist=false;
-								if(room.monster[j].special==0)
+								if(tt->special==0)
 									death_count++;
 								else
 									death_count+=3;
 								Monster::num_total--;
+								pre->nex=tt->nex;
+								delete tt;
+								tt=pre->nex;
+								flg=1;
 							}
-							if(room.monster[j].exist!=false)
-								room.monster[j].print_now(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
+							else
+								tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
 						}
 					}
+					if(flg==1)
+						continue;
+					tt=tt->nex;
+					pre=pre->nex;
 				}
 			}
 			else if(ben.ski[ben.cur]==4) // 即死激光反弹函数区
@@ -716,16 +732,17 @@ void Game::update_bullet()
 				if(Bullet::num_time_count==3)
 					Game::clear();
 					double minx=MAX_DOUBLE;
-					for(int j=0; j<400; j++) // 找激光可射中的最近的怪物的距离平方最小值
+					Monster *tt=room.monster->nex;
+					while(tt) // 找激光可射中的最近的怪物的距离平方最小值
 					{
-						if(room.monster[j].exist==false) continue;
-						for(int k=0; k<room.monster[j].num_edge; k++)
-							if(judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut)==true)
+						for(int k=0; k<tt->num_edge; k++)
+							if(judge_coll_line(line1_head,line1_last,tt->pos[k],tt->pos[k+1],cut)==true)
 								if( !(abs(cut.x-line1_head.x)<2&&abs(cut.y-line1_head.y)<2)&& !(abs(cut.x-line1_last.x)<2&&abs(cut.y-line1_last.y)<2))
 								{	
-									minx=min(minx, (line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y)  );
+									minx=min(minx, (line1_head.x-tt->pos_x)*(line1_head.x-tt->pos_x)+(line1_head.y-tt->pos_y)*(line1_head.y-tt->pos_y)  );
 									break;
 								}
+						tt=tt->nex;
 					}
 					for(int j=0; j<room.num_stone; j++) // 找激光可射中的最近的岩石的距离平方最小值
 					{
@@ -738,48 +755,62 @@ void Game::update_bullet()
 								}
 					}
 
-					int j=0;
-					for( ;j<400; j++) //找激光可射中的最近的怪物
-						if(room.monster[j].exist==true)
+					int flag1=0;
+					tt=room.monster->nex;
+					Monster *pre=room.monster;
+					while(tt) //找激光可射中的最近的怪物
+					{
+						if(minx!=(line1_head.x-tt->pos_x)*(line1_head.x-tt->pos_x)+(line1_head.y-tt->pos_y)*(line1_head.y-tt->pos_y))
+						{	
+							tt=tt->nex;
+							pre=pre->nex;
+							continue;
+						}
+						double minx1=MAX_DOUBLE;
+						for(int k=0; k<tt->num_edge; k++) // 找该怪物距离出射点最近的一条边并记录最小值
 						{
-							if(minx!=(line1_head.x-room.monster[j].pos_x)*(line1_head.x-room.monster[j].pos_x)+(line1_head.y-room.monster[j].pos_y)*(line1_head.y-room.monster[j].pos_y))
+							minx1=min(minx1,point_to_line(line1_head,tt->pos[k],tt->pos[k+1]));
+						}
+						int k=0,tem_edge=tt->num_edge;
+						for(; k<tem_edge; k++)
+						{
+							if(minx1!=point_to_line(line1_head,tt->pos[k],tt->pos[k+1])) 
 								continue;
-							double minx1=MAX_DOUBLE;
-							for(int k=0; k<room.monster[j].num_edge; k++) // 找该怪物距离出射点最近的一条边并记录最小值
+							judge_coll_line(line1_head,line1_last,tt->pos[k],tt->pos[k+1],cut);
+							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
+							if(Bullet::num_time_count==3)
 							{
-								minx1=min(minx1,point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1]));
+								setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
 							}
-							int k=0;
-							for(; k<room.monster[j].num_edge; k++)
+							if(Bullet::num_time_count==1)
+								line(line1_head.x,line1_head.y, cut.x, cut.y);
+							ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
+							judge_bullet(k,k+1,tt->pos,cut.x, cut.y, ben.line.xita);
+							line1_head.x=cut.x; line1_head.y=cut.y;
+							if(ben.line.exist==true && Bullet::num_time_count==2)
 							{
-								if(minx1!=point_to_line(line1_head,room.monster[j].pos[k],room.monster[j].pos[k+1])) continue;
-								judge_coll_line(line1_head,line1_last,room.monster[j].pos[k],room.monster[j].pos[k+1],cut);
-								if(ben.line.exist==true && Bullet::num_time_count==2)
-								{	
-									room.monster[j].print_old(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
-									room.monster[j].exist=false;
-									Monster::num_total--;
-									//printf("1111\n");
-									if(room.monster[j].special==0)
-										death_count++;
-									else
-										death_count+=3;
-								}
-								setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
-								if(Bullet::num_time_count==3)
-								{
-									setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 0 , 0 ));
-								}
-								if(Bullet::num_time_count==1)
-									line(line1_head.x,line1_head.y, cut.x, cut.y);
-								ben.line.life-=sqrt( (ben.line.pos_x-cut.x)*(ben.line.pos_x-cut.x)  + (ben.line.pos_y-cut.y)*(ben.line.pos_y-cut.y) );
-								judge_bullet(k,k+1,room.monster[j].pos,cut.x, cut.y, ben.line.xita);
-								line1_head.x=cut.x; line1_head.y=cut.y;
-								break;
+								tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+								Monster::num_total--;
+								if(tt->special==0)
+									death_count++;
+								else
+									death_count+=3;
+								pre->nex=tt->nex;
+								delete tt;
+								tt=pre->nex;
 							}
-						if(k<room.monster[j].num_edge) break;
+							break;
+						}
+						if(k<tem_edge) 
+						{	
+							flag1=1;
+							break;
+						}
+						tt=tt->nex;
+						pre=pre->nex;
 					}
-					
+					if(flag1==1) 
+						continue;
 					int q=0;
 					for( ;q<room.num_stone; q++) //找激光可射中的最近的岩石
 					{
@@ -793,7 +824,8 @@ void Game::update_bullet()
 						int k=0;
 						for(; k<4; k++)
 						{
-							if(minx1!=point_to_line(line1_head,room.stone[q].pos[k],room.stone[q].pos[k+1])) continue;
+							if(minx1!=point_to_line(line1_head,room.stone[q].pos[k],room.stone[q].pos[k+1])) 
+								continue;
 							judge_coll_line(line1_head,line1_last,room.stone[q].pos[k],room.stone[q].pos[k+1],cut);
 							setlinestyle(PS_SOLID, 5); setlinecolor(RGB( 0 , 255 , 0 ));
 							if(Bullet::num_time_count==3)
@@ -809,7 +841,7 @@ void Game::update_bullet()
 						}
 						if(k<4) break;
 					}
-					if(q<room.num_stone || j<400) continue;
+					if(q<room.num_stone || flag1==1) continue;
 
 			}
 			int i=0; // 墙壁反射
@@ -895,25 +927,32 @@ void Game::update_bullet()
 			ben.head->nex->print_bul_new(ben.head->nex->pos_x,ben.head->nex->pos_y);
 			judge_bullet(5,8,square.pos,ben.head->nex->pos_x, ben.head->nex->pos_y, ben.head->nex->xita);
 			Vector circle_up(ben.head->nex->pos_x-ben.head->nex->r,ben.head->nex->pos_y-ben.head->nex->r),circle_down(ben.head->nex->pos_x+ben.head->nex->r,ben.head->nex->pos_y+ben.head->nex->r);
-			for(int i=0; i<400; i++)
-				if(room.monster[i].exist==true)
-					if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
-					{	
-						ben.head->nex->exist=false;
-						ben.num_bul=0;
-						ben.head->nex->print_bul_old(ben.head->nex->pos_x,ben.head->nex->pos_y);
-						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-						room.monster[i].exist=false;
-						if(room.monster[i].special==0)
-							death_count++;
-						else
-							death_count+=3;
-						Monster::num_total--;
-						bomb_hurt(1);
-						delete ben.head->nex;
-						ben.head->nex=NULL;
-						break;
-					}
+			Monster *tt=room.monster->nex,*pre=room.monster;
+			while(tt)
+			{
+				if( judge_circle_coll(circle_up,circle_down,tt->pos,tt->num_edge)==true  )
+				{	
+					ben.head->nex->exist=false;
+					ben.num_bul=0;
+					ben.head->nex->print_bul_old(ben.head->nex->pos_x,ben.head->nex->pos_y);
+					tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+					
+					if(tt->special==0)
+						death_count++;
+					else
+						death_count+=3;
+					pre->nex=tt->nex;
+					delete tt;
+					tt=pre->nex;
+					Monster::num_total--;
+					bomb_hurt(1);
+					delete ben.head->nex;
+					ben.head->nex=NULL;
+					break;
+				}
+				tt=tt->nex;
+				pre=pre->nex;
+			}
 		}
 	}
 	if(  room.time_count>=room.time_max )
@@ -926,29 +965,40 @@ void Game::update_bullet()
 		ben.special.print_bul_new(ben.special.pos_x,ben.special.pos_y);
 		Vector circle_up(ben.special.pos_x-ben.special.r,ben.special.pos_y-ben.special.r),circle_down(ben.special.pos_x+ben.special.r,ben.special.pos_y+ben.special.r);
 		judge_bullet(5,8,square.pos,ben.special.pos_x, ben.special.pos_y, ben.special.xita);
-		for(int i=0; i<400; i++)
-			if(room.monster[i].exist==true)
-				if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
-				{	
-					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-					room.monster[i].exist=false;
-					if(room.monster[i].special==0)
-						death_count++;
-					else
-						death_count+=3;
-					Monster::num_total--;
-					ben.special.r+=7;
-					ben.special.speed[ben.special.cur]-=2;
-					if(ben.special.r>=50)
-					{
-						ben.last_special.pos_x=ben.special.pos_x;
-						ben.last_special.pos_y=ben.special.pos_y;
-						ben.special.r=20;
-						ben.special.speed[ben.special.cur]=22;
-						bomb_hurt(2);
-						break;
-					}
+		Monster *tt=room.monster->nex,*pre=room.monster;
+		int flg=0;
+		while(tt)
+		{
+			flg=0;
+			if( judge_circle_coll(circle_up,circle_down,tt->pos,tt->num_edge)==true  )
+			{	
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				if(tt->special==0)
+					death_count++;
+				else
+					death_count+=3;
+				Monster::num_total--;
+				pre->nex=tt->nex;
+				delete tt;
+				tt=pre->nex;
+				flg=1;
+				ben.special.r+=7;
+				ben.special.speed[ben.special.cur]-=2;
+				if(ben.special.r>=50)
+				{
+					ben.last_special.pos_x=ben.special.pos_x;
+					ben.last_special.pos_y=ben.special.pos_y;
+					ben.special.r=20;
+					ben.special.speed[ben.special.cur]=22;
+					bomb_hurt(2);
+					break;
 				}
+			}
+			if(flg==1)
+				continue;
+			tt=tt->nex;
+			pre=pre->nex;	
+		}
 	}
 	return;
 }
@@ -1000,14 +1050,24 @@ void Game::updateWithInput()
 			else ben.cur=1-ben.cur;
 			if(ben.ski[ben.cur]==2)
 			{
-				for(int i=0; i<Monster::num_count; i++)
-				{	
-					if(room.monster[i].exist=false) continue; 
-					room.monster[i].exist=false;
+				Monster *tem=room.monster->nex,*pre=room.monster;
+				while(room.monster->nex)
+				{
+					tem=room.monster->nex;
+					pre=room.monster;
+					while(tem->nex!=NULL)
+					{	
+						pre=pre->nex;
+						tem=tem->nex;
+					}
+					tem->print_old(tem->pos_x,tem->pos_y,tem->num_edge,tem->pos);
+					delete tem;
+					pre->nex=NULL;
 					Monster::num_total--;
-					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
 				}
+				room.monster->nex=NULL;
 				ben.num_count[2]++;
+
 			}
 			if(ben.ski[ben.cur]==5)
 			{
@@ -1134,102 +1194,119 @@ bool Game::judge_coll_chara_to_wall()
 void Game::judge_coll_mon_to_wall()
 {
 	Vector shadow;
-	for(int i=0; i<400; i++)
-		if(room.monster[i].exist)
-		{
-			double num_move=0;
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,square.edge1,5,shadow,num_move)==true)
-			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*num_move;
-				room.monster[i].pos_y-=shadow.y*num_move;
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-			}
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,square.edge2,5,shadow,num_move)==true)
-			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*num_move;
-				room.monster[i].pos_y-=shadow.y*num_move;
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-			}
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,square.edge3,5,shadow,num_move)==true)
-			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*num_move;
-				room.monster[i].pos_y-=shadow.y*num_move;
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-			}
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,square.edge4,5,shadow,num_move)==true)
-			{
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*num_move;
-				room.monster[i].pos_y-=shadow.y*num_move;
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-			}
-			judge_coll_mon_to_corner(i);
-			if( ( (room.monster[i].pos_x-square.pos_x)*(room.monster[i].pos_x-square.pos_x)  )+( (room.monster[i].pos_y-square.pos_y)*(room.monster[i].pos_y-square.pos_y) )>=350*350*2  )
-			{	
-				room.monster[i].exist=false;
-				Monster::num_total--;
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-			}
+	Monster *tt=room.monster;
+	while(tt)
+	{
+		double num_move=0;
+		if(judge_coll_single(tt->pos,tt->num_edge,square.edge1,5,shadow,num_move)==true)
+		{	
+			tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			tt->pos_x-=shadow.x*num_move;
+			tt->pos_y-=shadow.y*num_move;
+			tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
 		}
+		if(judge_coll_single(tt->pos,tt->num_edge,square.edge2,5,shadow,num_move)==true)
+		{	
+			tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			tt->pos_x-=shadow.x*num_move;
+			tt->pos_y-=shadow.y*num_move;
+			tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+		}
+		if(judge_coll_single(tt->pos,tt->num_edge,square.edge3,5,shadow,num_move)==true)
+		{	
+			tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			tt->pos_x-=shadow.x*num_move;
+			tt->pos_y-=shadow.y*num_move;
+			tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+		}
+		if(judge_coll_single(tt->pos,tt->num_edge,square.edge4,5,shadow,num_move)==true)
+		{
+			tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			tt->pos_x-=shadow.x*num_move;
+			tt->pos_y-=shadow.y*num_move;
+			tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+		}
+		tt=tt->nex;
+	}
+
 	return ;
 }
 void Game::judge_coll_cha_to_mon()
 {
 	Vector shadow;
-	for(int i=0; i<400; i++)
-		if(room.monster[i].exist)
-		{
-			double num_move=0;
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,ben.print_chara,7,shadow,num_move)==true)
-			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*num_move;
-				room.monster[i].pos_y-=shadow.y*num_move;
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				if(ben.judge_hurt==-1)
-				{
-					ben.judge_hurt++;
-					ben.life_now--;
-					room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-					room.monster[i].num_edge--;
-					if(room.monster[i].num_edge<3)
-					{	
-						room.monster[i].exist=false;
-						if(room.monster[i].special==1)
-							death_count+=10;
-						Monster::num_total--;
-					}
-					if(room.monster[i].exist!=false)
-						room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+	Monster *tt=room.monster->nex,*pre=room.monster;
+	int flag=0;
+	while(tt)
+	{
+		flag=0;
+		double num_move=0;
+		if(judge_coll_single(tt->pos,tt->num_edge,ben.print_chara,7,shadow,num_move)==true)
+		{	
+			tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			tt->pos_x-=shadow.x*num_move;
+			tt->pos_y-=shadow.y*num_move;
+			tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			if(ben.judge_hurt==-1)
+			{
+				ben.judge_hurt++;
+				ben.life_now--;
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				tt->num_edge--;
+				if(tt->num_edge<3)
+				{	
+					if(tt->special==1)
+						death_count+=10;
+					Monster::num_total--;
+					pre->nex=tt->nex;
+					delete tt;
+					tt=pre->nex;
+					flag=1;
 				}
+				else
+					tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
 			}
 		}
+		if(flag==1)
+			continue;
+		tt=tt->nex;
+		pre=pre->nex;
+	}
 	return ;
 }
 void Game::judge_coll_mon_to_mon()
 {
 	Vector shadow;
-	for(int i=0; i<400; i++)
+	if(room.monster->nex==NULL || room.monster->nex->nex==NULL)
+		return;
+	Monster *tt=room.monster->nex,*aft=room.monster->nex;
+	while(tt)
 	{
-		if(room.monster[i].special==3) continue;
-		if(room.monster[i].exist)
-			for(int j=i+1; j<400; j++)
-				if(room.monster[j].exist)
-				{
-					if(room.monster[j].special==3) continue;
-					double num_move=0;
-					if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge,room.monster[j].pos,room.monster[j].num_edge,shadow,num_move)==true)
-					{	
-						room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-						//room.monster[j].print_now(room.monster[j].pos_x,room.monster[j].pos_y,room.monster[j].num_edge,room.monster[j].pos);
-						room.monster[i].pos_x-=shadow.x*num_move;
-						room.monster[i].pos_y-=shadow.y*num_move;
-						room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-					}
-				}
+		if(tt->special==3)
+		{
+			tt=tt->nex;
+			continue;
+		}
+		aft=room.monster->nex;
+		while(aft)
+		{
+			if(aft->special==3) 
+				break;
+			if(tt==aft)
+			{
+				aft=aft->nex;
+				continue;
+			}
+			double num_move=0;
+			if(judge_coll_single(tt->pos,tt->num_edge,aft->pos,aft->num_edge,shadow,num_move)==true)
+			{	
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				tt->pos_x-=shadow.x*num_move;
+				tt->pos_y-=shadow.y*num_move;
+				tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			}
+			aft=aft->nex;
+		}
+		tt=tt->nex;
 	}
 	return ;
 }
@@ -1272,54 +1349,61 @@ void Game::judge_coll_cha_to_obstacle()
 		}
 	return;
 }
-void Game::judge_coll_mon_to_corner(int i)
-{
-	room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-	judge_coll_corner(room.monster[i].pos_x,room.monster[i].pos_y, square.corner, 4, square.pos_x, square.pos_y);
-	room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-	return;
-}
 void Game::judge_coll_mon_to_obstacle()
 {
-	Vector shadow; double num_move;
-	for(int i=0; i<400; i++)
-	{	
-		if(room.monster[i].exist==false) continue;
+	Vector shadow; 
+	double num_move;
+	Monster *tt=room.monster->nex,*pre=room.monster;
+	int flag=0;
+	while(tt) 
+	{
+		flag=0;
 		for(int j=0; j<room.num_stab; j++)
 		{
-			if(room.monster[i].special==1) break;
-			if(room.stab[j].judge_show==false) continue;
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge, room.stab[j].pos ,5,shadow,num_move)==true)
+			if(tt->special==1) 
+				break;
+			if(room.stab[j].judge_show==false) 
+				continue;
+			if(judge_coll_single(tt->pos,tt->num_edge, room.stab[j].pos ,5,shadow,num_move)==true)
 			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].num_edge--;
-				if(room.monster[i].num_edge<3)
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				tt->num_edge--;
+				if(tt->num_edge<3)
 				{	
 					if(ben.cur==2 || ben.cur==3 || ben.ski[ben.cur]==2)
 					{
-						if(room.monster[i].special==0)
+						if(tt->special==0)
 							death_count+=2;
 						else
 							death_count+=5;
 					}
-					room.monster[i].exist=false;
 					Monster::num_total--;
+					pre->nex=tt->nex;
+					delete tt;
+					tt=pre->nex;
+					flag=1;
+					break;
 				}
-				if(room.monster[i].exist!=false)
-					room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+				else
+					tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
 			}
 		}
+		if(flag==1)
+			continue;
 		for(int j=0; j<room.num_stone; j++)
 		{
-			if(room.monster[i].special==2) break;
-			if(judge_coll_single(room.monster[i].pos,room.monster[i].num_edge, room.stone[j].pos ,5,shadow,num_move)==true)
+			if(tt->special==2) 
+				break;
+			if(judge_coll_single(tt->pos,tt->num_edge, room.stone[j].pos ,5,shadow,num_move)==true)
 			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].pos_x-=shadow.x*(num_move+5);
-				room.monster[i].pos_y-=shadow.y*(num_move+5);
-				room.monster[i].print_now(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				tt->pos_x-=shadow.x*(num_move+5);
+				tt->pos_y-=shadow.y*(num_move+5);
+				tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
 			}
 		}
+		tt=tt->nex;
+		pre=pre->nex;
 	}
 }
 void Game::fresh_map()
@@ -1395,7 +1479,6 @@ void Game::fresh_room()
 		ben.cur=ben.cur>1?ben.cur:ben.cur+2;
 		if(judge_coll_single(ben.print_chara,7,room.door,5,tem,tem1)==true   )
 		{
-			memset(room.monster,0,sizeof(room.monster));
 			Monster::num_total=0;
 			Monster::num_count=0;
 			Game::clear();
@@ -1417,15 +1500,19 @@ void Game::fresh_room()
 			{
 				if(ben.last!=ben.head)
 				{
-					Bullet *bul=ben.head->nex,*aft_bul=bul;
-					while(bul!=NULL)
+					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
+					while(ben.head->nex!=NULL)
 					{
-						aft_bul=bul;
-						while(aft_bul->nex!=NULL)
-							aft_bul=aft_bul->nex;
-						aft_bul->exist=false;
-						aft_bul->print_bul_old(aft_bul->pos_x,aft_bul->pos_y);
-						delete aft_bul;
+						bul=ben.head->nex;
+						pre_bul=ben.head;
+						while(bul->nex!=NULL)
+						{	
+							pre_bul=pre_bul->nex;
+							bul=bul->nex;
+						}
+						bul->print_bul_old(bul->pos_x,bul->pos_y);
+						delete bul;
+						pre_bul->nex=NULL;
 					}
 				}
 				if(ben.head->nex==NULL)
@@ -1445,30 +1532,37 @@ void Game::bomb_hurt(int mod)
 		setfillcolor(RGB( 255 , 255 , 0 ));
 		ben.num_count[ben.ski[ben.cur]]=0;
 		Vector circle_up(ben.head->nex->pos_x-75,ben.head->nex->pos_y-75),circle_down(ben.head->nex->pos_x+75,ben.head->nex->pos_y+75);
-		for(int i=0; i<400; i++)
+		Monster *tt=room.monster->nex,*pre=room.monster;
+		while(tt)
 		{
-			if(room.monster[i].exist==false) continue;
-			if( (room.monster[i].pos_x-ben.head->nex->pos_x)*(room.monster[i].pos_x-ben.head->nex->pos_x)+(room.monster[i].pos_y-ben.head->nex->pos_y)*(room.monster[i].pos_y-ben.head->nex->pos_y)<=75*75  )
+			if( (tt->pos_x-ben.head->nex->pos_x)*(tt->pos_x-ben.head->nex->pos_x)+(tt->pos_y-ben.head->nex->pos_y)*(tt->pos_y-ben.head->nex->pos_y)<=75*75  )
 			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].exist=false;
-				if(room.monster[i].special==0)
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				if(tt->special==0)
 					death_count++;
 				else
 					death_count+=3;
 				Monster::num_total--;
+				pre->nex=tt->nex;
+				delete tt;
+				tt=pre->nex;
 				continue;
 			}
-			if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
+			if( judge_circle_coll(circle_up,circle_down,tt->pos,tt->num_edge)==true  )
 			{
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].exist=false;
-				if(room.monster[i].special==0)
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				if(tt->special==0)
 					death_count++;
 				else
 					death_count+=3;
 				Monster::num_total--;
+				pre->nex=tt->nex;
+				delete tt;
+				tt=pre->nex;
+				continue;
 			}
+			tt=tt->nex;
+			pre=pre->nex;
 		}
 		if( ( (ben.pos_x-ben.head->nex->pos_x)*(ben.pos_x-ben.head->nex->pos_x)+(ben.pos_y-ben.head->nex->pos_y)*(ben.pos_y-ben.head->nex->pos_y)<=75*75) || ( judge_circle_coll(circle_up,circle_down,ben.print_chara,7)==true  )  )
 			if(ben.judge_hurt==-1)
@@ -1486,30 +1580,36 @@ void Game::bomb_hurt(int mod)
 		setfillcolor(RGB( 0 , 0 , 255 ));
 		ben.num_count[ben.ski[ben.cur]]=0;
 		Vector circle_up(ben.last_special.pos_x-90,ben.last_special.pos_y-90),circle_down(ben.last_special.pos_x+90,ben.last_special.pos_y+90);
-		for(int i=0; i<400; i++)
+		Monster *tt=room.monster->nex,*pre=room.monster;
+		while(tt)
 		{
-			if(room.monster[i].exist==false) continue;
-			if( (room.monster[i].pos_x-ben.last_special.pos_x)*(room.monster[i].pos_x-ben.last_special.pos_x)+(room.monster[i].pos_y-ben.last_special.pos_y)*(room.monster[i].pos_y-ben.last_special.pos_y)<=90*90  )
+			if( (tt->pos_x-ben.last_special.pos_x)*(tt->pos_x-ben.last_special.pos_x)+(tt->pos_y-ben.last_special.pos_y)*(tt->pos_y-ben.last_special.pos_y)<=90*90  )
 			{	
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].exist=false;
-				if(room.monster[i].special==0)
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				if(tt->special==0)
 					death_count++;
 				else
 					death_count+=3;
 				Monster::num_total--;
+				pre->nex=tt->nex;
+				delete tt;
+				tt=pre->nex;
 				continue;
 			}
-			if( judge_circle_coll(circle_up,circle_down,room.monster[i].pos,room.monster[i].num_edge)==true  )
+			if( judge_circle_coll(circle_up,circle_down,tt->pos,tt->num_edge)==true  )
 			{
-				room.monster[i].print_old(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
-				room.monster[i].exist=false;
-				if(room.monster[i].special==0)
+				tt->print_old(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+				if(tt->special==0)
 					death_count++;
 				else
 					death_count+=3;
 				Monster::num_total--;
+				pre->nex=tt->nex;
+				delete tt;
+				tt=pre->nex;
 			}
+			tt=tt->nex;
+			pre=pre->nex;
 		}
 		setlinestyle(PS_SOLID, 1); setlinecolor(RGB( 0 , 0 , 255 ));
 		setfillcolor(RGB( 0 , 0 , 255 ));
@@ -1520,9 +1620,31 @@ void Game::bomb_hurt(int mod)
 //////////// Room ////////////////
 Room::Room()
 {
+	monster=new Monster;
+	monster->nex=NULL;
 	new_room(0);
 }
-Room::~Room(){}
+Room::~Room()
+{
+	Monster *tem,*pre;
+	while(monster->nex!=NULL)
+	{	
+		tem=monster->nex;
+		pre=monster;
+		if(tem!=NULL)
+		{
+			while(tem->nex!=NULL)
+			{	
+				tem=tem->nex;
+				pre=pre->nex;
+			}
+			delete tem;
+			pre->nex=NULL;
+		}
+	}
+	monster->nex=NULL;
+	delete monster;
+}
 void Room::new_door(POINT door[], double angle, int mod)
 {
 	int squ_x=900,squ_y=495;
@@ -1602,6 +1724,26 @@ void Room::new_room(int a)
 	Monster::num_count=0;
 	Monster::num_total=0;
 	Game::num_monster_fresh=0;
+	Monster *tem,*pre;
+	if(a)
+	{
+		while(monster->nex!=NULL)
+		{	
+			tem=monster->nex;
+			pre=monster;
+			if(tem!=NULL)
+			{
+				while(tem->nex!=NULL)
+				{	
+					tem=tem->nex;
+					pre=pre->nex;
+				}
+				delete tem;
+				pre->nex=NULL;
+			}
+		}
+		monster->nex=NULL;
+	}
 	
 }
 void Room::update_monster(int x, int y, Square square)
@@ -1616,30 +1758,30 @@ void Room::update_monster(int x, int y, Square square)
 		// 1*sin(x)+3-2*cos(2*x)
 	{	
 		Game::num_monster_fresh=0;
-		monster[Monster::num_count++].create_new_monster(x,y,square);
+		Monster *tt=monster->nex,*pre=monster;
+		while(pre->nex)
+			pre=pre->nex;
+		tt=new Monster;
+		tt->create_new_monster(x,y,square);
+		pre->nex=tt;
 		Monster::num_total++;
 		if(Monster::num_count>400)
 			Monster::num_count=0;
 	}   //   a+b=20    5a+b=10   -2.5   22.5
-	for(int i=0 ; i<400; i++)
-		if(monster[i].exist==true)
-		{
-			get_path(monster[i].pos_x,monster[i].pos_y,x,y,monster[i].path,monster[i].special);
-			monster[i].print_old(monster[i].pos_x,monster[i].pos_y,monster[i].num_edge,monster[i].pos);
-			Vector tem(monster[i].path.x-monster[i].pos_x,monster[i].path.y-monster[i].pos_y);
-			tem.new_normalize();
-		/*	if((monster[i].path.y-monster[i].pos_y<2))
-			{	tem.y=0;  tem.x=1;}
-			if((monster[i].path.x-monster[i].pos_x)<2)
-			{	tem.x=0;  tem.y=1;}
-			if(( (monster[i].path.x-monster[i].pos_x)<2)&&( (monster[i].path.y-monster[i].pos_y<2)))
-				tem.x=tem.y=0;  */
-			monster[i].pos_x+= tem.x*monster[i].speed;
-			monster[i].pos_y+= tem.y*monster[i].speed;
-			monster[i].print_now(monster[i].pos_x,monster[i].pos_y,monster[i].num_edge,monster[i].pos);
-			if(time_count>=time_max) 
-				monster[i].speed+=0.02;
-		}
+	Monster *tem=monster->nex;
+	while(tem)
+	{
+		get_path(tem->pos_x,tem->pos_y,x,y,tem->path,tem->special);
+		tem->print_old(tem->pos_x,tem->pos_y,tem->num_edge,tem->pos);
+		Vector tem1(tem->path.x-tem->pos_x,tem->path.y-tem->pos_y);
+		tem1.new_normalize();
+		tem->pos_x+= tem1.x*tem->speed;
+		tem->pos_y+= tem1.y*tem->speed;
+		tem->print_now(tem->pos_x,tem->pos_y,tem->num_edge,tem->pos);
+		if(time_count>=time_max) 
+			tem->speed+=0.02;
+		tem=tem->nex;
+	}
 	return;
 }
 void Room::get_path(int x ,int  y, int aim_x, int aim_y, POINT &path, int special)
@@ -1792,7 +1934,7 @@ while(findd==false)
 	}
 	}
 	count++;    // 异常状态弹出
-	if(count>9600)
+	if(count>6000)
 	{
 		path.x=aim_x;
 		path.y=aim_y;
@@ -1814,16 +1956,7 @@ while(findd==false)
 	path=ans;
 	return;
 }
-/*Room	 Room::operator = (const Room & a )
-{
-/*	this->num_stab=a.num_stab;
-	this->num_stone=a.num_stone;
-	this->rand_c=a.rand_c;
-	this->time_max=a.time_max;
-	for(int i=0; i<5; i++) this->door[i]=a.door[i];
-	for(int i=0; i<500; i++) this->monster[i]=a.monster[i];
-	
-}*/
+
 
 /////////// Charactor ////////////////
 Charactor::Charactor() 
@@ -2476,7 +2609,8 @@ void Bullet::operator =(Bullet a)
 /////////// Monster ////////////////
 Monster::Monster(int num)
 {
-	exist=false;
+	exist=true;
+	nex=NULL;
 }
 Monster::Monster()
 {
@@ -2487,7 +2621,8 @@ Monster::Monster()
 	num_edge=rand()%4+3;
 	exist=true;
 	new_point(pos_x,pos_y,num_edge,pos);*/
-	exist=false;
+	exist=true;
+	nex=NULL;
 }
 void Monster::new_point(int x, int y, int num_edge, POINT pos[])
 {
@@ -2585,6 +2720,7 @@ void Monster::print_old(int x, int y, int num, POINT pos[])
 void Monster::create_new_monster(int x,int y, Square square)
 {
 	exist=true;
+	nex=NULL;
 	double cc=0.85 - exp(-0.2*Game::room_count*1.0)+0.06*sin(-2*Game::room_count*1.0)+0.06*cos(-2*Game::room_count*1.0);
 	cc=abs(cc)*100;
 	// special==1\2\3 speed==8          special==0,speed=5
@@ -4190,13 +4326,26 @@ bool Game::read_data()
 		load_data>>room.stone[i].pos_x>>room.stone[i].pos_y>>room.stab[i].init;
 		room.stone[i].new_point();
 	}
-	for(int i=0; i<500; i++)
+	Monster *tt,*pre=room.monster;
+	int co;
+	load_data>>co;
+	if(co==0)
+		room.monster->nex=NULL;
+	else
 	{
-		load_data>>room.monster[i].pos_x>>room.monster[i].pos_y
-			>>room.monster[i].speed>>room.monster[i].num_edge
-			>>room.monster[i].special>>room.monster[i].exist>>room.monster[i].special;
-		room.monster[i].new_point(room.monster[i].pos_x,room.monster[i].pos_y,room.monster[i].num_edge,room.monster[i].pos);
+		for(int i=0; i<co; i++)
+		{
+			tt=new Monster;
+			load_data>>tt->pos_x>>tt->pos_y
+				>>tt->speed>>tt->num_edge
+				>>tt->special>>tt->exist>>tt->special;
+			tt->new_point(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
+			pre->nex=tt;
+			pre=pre->nex;
+		}
+		pre->nex=NULL;
 	}
+	
 	///////// Charactor  //////////
 	load_data>>ben.mod>>ben.pos_x>>ben.pos_y
 		>>ben.judge_dir
@@ -4216,22 +4365,22 @@ bool Game::read_data()
 	load_data>>ben.special.pos_x>>ben.special.pos_y>>ben.special.xita
 		>>ben.special.exist>>ben.special.special>>ben.special.life>>ben.special.cur;
 
-	Bullet *tem=new Bullet,*pre=ben.head;
+	Bullet *bul_tem=new Bullet,*bul_pre=ben.head;
 	int num_store_bul=0;
 	load_data>>num_store_bul;
 	while(num_store_bul--)
 	{
-		load_data>>tem->pos_x>>tem->pos_y
-		>>tem->xita>>tem->exist>>tem->special
-		>>tem->life>>tem->cur;
+		load_data>>bul_tem->pos_x>>bul_tem->pos_y
+		>>bul_tem->xita>>bul_tem->exist>>bul_tem->special
+		>>bul_tem->life>>bul_tem->cur;
 
-		pre->nex=tem;
-		tem=new Bullet;
-		pre=pre->nex;
+		bul_pre->nex=bul_tem;
+		bul_tem=new Bullet;
+		bul_pre=bul_pre->nex;
 	}
-	delete tem;
-	pre->nex=NULL;
-	ben.last=pre;
+	delete bul_tem;
+	bul_pre->nex=NULL;
+	ben.last=bul_pre;
 	
 	///////// end ///////////////
 	load_data.close();
@@ -4273,11 +4422,21 @@ void Game::write_data()
 	}
 	for(int i=0; i<10; i++)
 		save_data<<room.stone[i].pos_x<<endl<<room.stone[i].pos_y<<endl<<room.stab[i].init<<endl;
-	for(int i=0; i<500; i++)
+	Monster *tt=room.monster;
+	int co=0;
+	while(tt!=NULL)
 	{
-		save_data<<room.monster[i].pos_x<<endl<<room.monster[i].pos_y<<endl
-			<<room.monster[i].speed<<endl<<room.monster[i].num_edge<<endl
-			<<room.monster[i].special<<endl<<room.monster[i].exist<<endl<<room.monster[i].special<<endl;
+		tt=tt->nex;
+		co++;
+	}
+	save_data<<co<<endl;
+	tt=room.monster->nex;
+	while(tt)
+	{
+		save_data<<tt->pos_x<<endl<<tt->pos_y<<endl
+			<<tt->speed<<endl<<tt->num_edge<<endl
+			<<tt->special<<endl<<tt->exist<<endl<<tt->special<<endl;
+		tt=tt->nex;
 	}
 	///////// Charactor  ////////////
 	save_data<<ben.mod<<endl<<ben.pos_x<<endl<<ben.pos_y<<endl
@@ -4297,7 +4456,7 @@ void Game::write_data()
 	save_data<<ben.special.pos_x<<endl<<ben.special.pos_y<<endl<<ben.special.xita<<endl
 		<<ben.special.exist<<endl<<ben.special.special<<endl<<ben.special.life<<endl<<ben.special.cur<<endl;
 
-	Bullet *tem=ben.head->nex;
+	Bullet *tem=ben.head;
 	int num_store_bul=0;
 	while(tem!=NULL)
 	{
