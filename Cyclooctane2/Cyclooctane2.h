@@ -69,15 +69,15 @@ public:
 	Vector(POINT a, POINT b);
 	Vector(const Vector& a);
 	Vector() ;
-	Vector operator = (Vector a);
+	Vector& operator = (Vector a);
 	Vector operator - (Vector a);
 	Vector operator + (Vector a);
 	Vector operator * (double a);
 	Vector operator / (double a);
 
-	Vector vertical() ; //把向量变成其垂直向量
+	Vector vertical() ;         // 把向量变成其垂直向量
 	double get_lenth();
-	Vector new_normalize();  // 单位化
+	Vector new_normalize();     // 单位化
 	double dotmulti(Vector a);  // 求内积
 };
 
@@ -103,14 +103,14 @@ public:
 	void operator =(Bullet a);
 };
 
-struct Charactor //角色
+struct Charactor
 {
 	double pos_x,pos_y;
-	int judge_dir; // 判断此时的常态方向
-	int judge_hurt; // 受伤后无敌一小段时间
-	Bullet *head,*last;     //  技能1：子弹
-	Bullet line,last_line;    //  技能3、4： 激光
-	Bullet special,last_special;   //  技能5、6：爆弹、食弹
+	int judge_dir;                 // 判断此时的常态方向
+	int judge_hurt;                // 受伤后无敌一小段时间
+	Bullet *head,*last;            // 技能1：子弹
+	Bullet line,last_line;         // 技能3、4： 激光
+	Bullet special,last_special;   // 技能5、6：爆弹、食弹
 	int num_bul;
 	double speed;
 	int life,life_now;
@@ -132,7 +132,7 @@ public:
 	void update();
 };
 
-struct Monster //小怪
+struct Monster
 {
 public:
 	double pos_x,pos_y;
@@ -153,11 +153,11 @@ public:
 	void create_new_monster(int x, int y, Square square);
 };
 
-struct Obstacle // 障碍
+struct Obstacle
 {
 public:
-	double pos_x,pos_y;//该障碍物的位置
-	double init,dis;//与房间中心的初始角度和距离 (极坐标)
+	double pos_x,pos_y;  // 该障碍物的位置
+	double init,dis;     // 与房间中心的初始角度和距离 (极坐标)
 	POINT pos[5];
 	Obstacle();
 	static const double r;
@@ -168,9 +168,9 @@ public:
 
 struct Stab:public Obstacle
 {
-	int count;// 地刺型障碍物的计时器
-	POINT stab[7];// 地刺型障碍物的刺坐标数组
-	bool judge_show;// 地刺型障碍判断是否会造成伤害
+	int count;        // 地刺型障碍物的计时器
+	POINT stab[7];    // 地刺型障碍物的刺坐标数组
+	bool judge_show;  // 地刺型障碍判断是否会造成伤害
 	int count_max;
 	virtual void new_point();
 	void print_now(double angle);
@@ -201,9 +201,9 @@ public:
 	POINT edge1[5],edge2[5],edge3[5],edge4[5];
 	POINT corner[4];
 	Square();
-	virtual void new_room_point (double pos_x, double pos_y, double angle , POINT pos[]); //更新坐标数组
-	virtual void paint_room_new(double pos_x, double pos_y, POINT pos[], double angle); // 画新房间
-	virtual void paint_room_old(double pos_x, double pos_y, POINT pos[],double angle); //抹去旧房间
+	virtual void new_room_point (double pos_x, double pos_y, double angle , POINT pos[]); // 更新坐标数组
+	virtual void paint_room_new(double pos_x, double pos_y, POINT pos[], double angle);   // 画新房间
+	virtual void paint_room_old(double pos_x, double pos_y, POINT pos[],double angle);    // 抹去旧房间
 	virtual void judge_input( int ski);   // 根据输入更新角度
 //	void tester();
 };
@@ -218,10 +218,10 @@ public:
 	Monster *monster;
 	POINT door[5];
 	int num_stab,num_stone;
-	int time_count;  // 计时 时间一到开门，人物失去攻击能力
-	int rand_c;   //　与门位置相关的随机数
-	int time_max;//　时间上限，每个房间随机生成，但总体随闯关进行而上升
-	void new_room(int a);// 新房间
+	int time_count;          // 计时 时间一到开门，人物失去攻击能力
+	int rand_c;              // 与门位置相关的随机数
+	int time_max;            // 时间上限，每个房间随机生成，但总体随闯关进行而上升
+	void new_room(int a);    // 生成新房间
 	void new_door(POINT door[], double angle,int mod);// 生成并画门
 	void update_monster(int x, int y, Square square);
 	void get_path(int x ,int  y, int aim_x, int aim_y, POINT &path, int special);
@@ -233,25 +233,24 @@ struct Game
 	Charactor ben;
 	Room room;
 	Square square;
-	int death_count;
-	static int room_count;
-	bool judge_update;
-	static int coin;
-	int flag;
-	int current_state;
-	int Bullet_num_time_count;
-	static int num_monster_fresh;
-	bool on_game;
-	bool jud_skin2,jud_skin3;
+	int death_count;             // 当前局杀怪数，小金币，不保存
+	static int room_count;       // 闯关数，作分数和评价
+	bool judge_update;           // 判断下一房间是否是商店，和闯关数有关
+	static int coin;             // 大金币，随存档
+	int flag;                    // 是否抽取过技能并且未进行完游戏
+	int current_state;           // 存档时保存状态机当前状态
+	int Bullet_num_time_count;   // 子弹计时
+	static int num_monster_fresh;// 怪物刷新计时
+	bool jud_skin2,jud_skin3;    // 2、3皮肤解锁状态
 public:
 	Game();
 	void startup();
-	void updateWithInput(); // 与输入相关的更新
-	void updateWithoutInput(); // 与输入无关的更新
+	void updateWithInput();      // 与输入相关的更新
+	void updateWithoutInput();   // 与输入无关的更新
 	void show();
-	static void clear();  //　清屏
+	static void clear();         // 清屏
 	void judge_bullet(int start, int end, POINT pos[], double x, double y, double &xita); //子弹反弹
-	void update_bullet(); // 子弹更新、杀敌
+	void update_bullet();        // 子弹更新、杀敌
 	bool judge_coll_chara_to_wall();
 	void print_new();
 	void judge_coll_mon_to_wall();
@@ -260,19 +259,19 @@ public:
 	void judge_coll_corner(double &pos_x, double& pos_y, POINT second[], int num_second, double center_x, double center_y);
 	void judge_coll_cha_to_obstacle();
 	void judge_coll_mon_to_obstacle();
-	void fresh_map();  // 实时更新地图
-	void fresh_room(); // 房间切换判定
-	void bomb_hurt(int mod); //第三形态普攻爆炸判定
-	void fresh_data();  // 重置数据
-	void write_data();    // 存档（从文件）
-	bool read_data();    // 读档（从文件）
+	void fresh_map();            // 实时更新地图
+	void fresh_room();           // 房间切换判定
+	void bomb_hurt(int mod);     // 第三形态普攻爆炸判定
+	void fresh_data();           // 重置数据
+	void write_data();           // 存档（从文件）
+	bool read_data();            // 读档（从文件）
 };
 
 
 struct State  
 {  
     virtual State* transition(int) = 0;   // 状态转移
-	virtual void eventt()=0;  // 该状态的事件
+	virtual void eventt()=0;              // 该状态的事件
 };
 
 struct MENU_START:public State  
@@ -343,12 +342,12 @@ public:
 	static State *current;
 };
 
-int normalize_x(double x);  // 找到坐标所在方格的中心点x坐标
-int normalize_y(double y);   // 找到坐标所在方格的中心点y坐标
-int get_i(double x);   // 该中心对应mapp的i值
-int get_j(double y);  // 该中心对应mapp的j值
-int get_x_from_i(int i);  //根据i求得方格中心点x坐标
-int get_y_from_j(int j); //根据i求得方格中心点x坐标
+int normalize_x(double x);    // 找到坐标所在方格的中心点x坐标
+int normalize_y(double y);    // 找到坐标所在方格的中心点y坐标
+int get_i(double x);          // 该中心对应mapp的i值
+int get_j(double y);          // 该中心对应mapp的j值
+int get_x_from_i(int i);      // 根据i求得方格中心点x坐标
+int get_y_from_j(int j);      // 根据i求得方格中心点x坐标
 void quicksort(int first, int last , Node* a);
 bool judge_coll_line(POINT a , POINT b, POINT c, POINT d, POINT &cut);  // 线段相交判定并求交点（若有）
 void initi();  // 窗体初始化

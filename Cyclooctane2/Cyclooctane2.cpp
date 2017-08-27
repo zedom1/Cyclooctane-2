@@ -3,6 +3,7 @@ using namespace std;
 #pragma warning(disable:4244)
 #pragma warning(disable:4305)
 #pragma warning(disable:4996)
+#pragma warning(disable:4800)
 
 /////////// 常量 ////////////////
 const double pi=3.1415926535;
@@ -385,7 +386,7 @@ double Vector::dotmulti(Vector a)
 {
 	return a.x*x+a.y*y;
 }
-Vector Vector::operator = (Vector a)
+Vector& Vector::operator = (Vector a)
 {
 	x=a.x; y=a.y;
 	return *this;
@@ -716,6 +717,7 @@ void Game::update_bullet()
 								delete tt;
 								tt=pre->nex;
 								flg=1;
+								break;
 							}
 							else
 								tt->print_now(tt->pos_x,tt->pos_y,tt->num_edge,tt->pos);
@@ -1194,7 +1196,7 @@ bool Game::judge_coll_chara_to_wall()
 void Game::judge_coll_mon_to_wall()
 {
 	Vector shadow;
-	Monster *tt=room.monster;
+	Monster *tt=room.monster->nex;
 	while(tt)
 	{
 		double num_move=0;
@@ -1961,7 +1963,7 @@ while(findd==false)
 /////////// Charactor ////////////////
 Charactor::Charactor() 
 {
-	set_new_data(1);
+	set_new_data(0);
 }
 Charactor::~Charactor()
 {
@@ -2397,7 +2399,6 @@ void Charactor::set_new_data(int md)
 	head->exist=false;
 	head->nex=NULL;
 	last=head;
-
 	special.pos_x=pos_x;
 	special.pos_y=pos_y;
 	if(md==1)
@@ -3135,13 +3136,26 @@ void MENU_START::eventt()
 	if(gamestatus==1)
 	{	
 		gamestatus=2;
-		cyclooctane.fresh_data();
-
+		if(cyclooctane.read_data()==true)
+		{
+			int tem[6]=
+			{cyclooctane.death_count,cyclooctane.coin,cyclooctane.flag,cyclooctane.jud_skin2,cyclooctane.jud_skin3,cyclooctane.ben.ski[0]};
+			cyclooctane.fresh_data();
+			cyclooctane.death_count=tem[0];
+			cyclooctane.coin=tem[1];
+			cyclooctane.flag=tem[2];
+			cyclooctane.jud_skin2=tem[3];
+			cyclooctane.jud_skin3=tem[4];
+			cyclooctane.ben.ski[0]=tem[5];
+		}
+		else
+			cyclooctane.fresh_data();
+		
 	}
 	else if(gamestatus==2)
 	{
 		gamestatus=3;
-		if(cyclooctane.read_data()!=true || cyclooctane.on_game==false)
+		if( cyclooctane.read_data()!=true || cyclooctane.current_state!=1 )
 			gamestatus=1;
 	}
 	else if(gamestatus==4)
@@ -3169,7 +3183,6 @@ void MENU_CHA::eventt()
 	/////////////////////////////////////
 	cyclooctane.coin=999;
 	////////////////////////////////////
-	cyclooctane.read_data();
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_ben=L"Benzene";
 	LPCTSTR str_cyc=L"Cyclohexadiene";
@@ -3329,7 +3342,6 @@ State* MENU_SKILL::transition(int x)
 }  
 void MENU_SKILL::eventt()
 {
-	cyclooctane.read_data();
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_c1=L"抽取";
 	LPCTSTR str_c2=L"重新抽取 ( $ 5 )";
@@ -3512,7 +3524,6 @@ State* ON_GAME::transition(int x)
 void ON_GAME::eventt()
 {
 	int gamestatus=3;
-	cyclooctane.on_game=true;
 	Game::clear();
 	while(1)  //  游戏循环执行
 	{
@@ -3542,7 +3553,6 @@ void ON_GAME::eventt()
 		if(cyclooctane.ben.life_now<=0)
 		{
 			cyclooctane.coin+=cyclooctane.room_count-1;
-			cyclooctane.on_game=false;
 			gamestatus=5; break;
 		}
 		if(cyclooctane.room_count%3==0&&cyclooctane.room_count&&cyclooctane.judge_update==0)
@@ -4132,185 +4142,74 @@ void HELP::eventt()
 	return;
 }
 
-/////////// Data Base ////////////////
+/////////// Data  ////////////////
 void Game::fresh_data()
 {
 	empt.startup();
 	Bullet_num_time_count=0;
 	num_monster_fresh=0;
+	current_state=1;
 	judge_update=0;
 	death_count=0;
 	coin=0;
 	flag=0;
-	on_game=false;
 	jud_skin2=false;
 	jud_skin3=false;
 	return;
 }
-/*
-bool Game::read_data()
-{
-	/*Decrypt_file("save01.data", "save03.data");
-	//FILE *fp=fopen("save01.txt","rb");
-	ifstream load_data("save01.data",ios::in);
-
-	if(!load_data.is_open())
-		return false;
-	fread( &square,sizeof(struct Square),1,fp );  
-	//fscanf(fp,"%c",&c);
-	//assert(c=='a');
-	fread( &ben.mod,sizeof(int),1,fp );
-	fread( &ben.pos_x,sizeof(double),1,fp );
-	fread( &ben.pos_y,sizeof(double),1,fp );
-	fread( &ben.judge_dir,sizeof(int),1,fp );
-	fread( &ben.judge_hurt,sizeof(ben.judge_hurt),1,fp );
-	fread( &ben.line,sizeof(ben.line) ,1,fp);
-	fread( &ben.last_line,sizeof(ben.last_line) ,1,fp);
-	fread( &ben.special,sizeof(ben.special),1,fp );
-	fread( &ben.last_special,sizeof(ben.last_special),1,fp );
-	fread( &ben.num_bul,sizeof(ben.num_bul),1,fp );
-	fread( &ben.speed,sizeof(ben.speed),1,fp );
-	fread( &ben.life,sizeof(ben.life),1,fp );
-	fread( &ben.life_now,sizeof(ben.life_now) ,1,fp);
-	fread( &ben.print_chara,sizeof(ben.print_chara),1,fp );
-	fread( &ben.ski,sizeof(ben.ski) ,1,fp);
-	fread( &ben.cur,sizeof(ben.cur),1,fp );
-	fread( &ben.num_count,sizeof(ben.num_count),1,fp );
-// 	fscanf(fp,"%c",&c);
-// 	assert(c=='b');
-	fread( &(current_state),sizeof(current_state) ,1,fp);
-	fread( &(judge_update),sizeof(judge_update) ,1,fp);
-	fread( &(death_count),sizeof(death_count),1,fp );
-	fread( &(Bullet_num_time_count),sizeof(Bullet_num_time_count) ,1,fp);
-	fread( &(num_monster_fresh),sizeof(num_monster_fresh),1,fp );
-	fread( &(room_count),sizeof(room_count) ,1,fp);
-	fread( &(coin),sizeof(coin) ,1,fp);
-	fread( &(flag),sizeof(flag),1,fp );
-	fread( &(on_game),sizeof(on_game) ,1,fp);
-	fread( &(jud_skin2),sizeof(jud_skin2),1,fp );
-	fread( &(jud_skin3),sizeof(jud_skin3),1,fp );
-// 	fscanf(fp,"%c",&c);
-// 	assert(c=='c');
-	fread( &room,sizeof(struct Room) ,1,fp);
-// 	fscanf(fp,"%c",&c);
-// 	assert(c=='d');
-	//room.new_room(1);
-	Bullet::num_time_count=Bullet_num_time_count;
-
-	ben.head=new Bullet;
-	ben.head->exist=false;
-	ben.head->nex=NULL;
-	ben.last=ben.head;
-	Bullet *bul;
-	for(int i=0; i<ben.num_bul; i++)
-	{
-		bul=new Bullet;
-		fread( bul,sizeof(struct Bullet),1,fp );
-		ben.last->nex=bul;
-		ben.last=ben.last->nex;
-	}
-	ben.last->nex=NULL;
-// 	fscanf(fp,"%c",&c);
-// 	assert(c=='e');
-	fclose(fp);
-	/*ofstream te;
-	int t1=0;
-	te.open("save03.data", ios::out);
-	te.write(&t1, sizeof(t1) );
-	te.close();
-	return true;
-}
-void Game::write_data()
-{
-//	FILE *fp;
-//	fp=fopen("save01.txt","wb");
- 	ofstream save_data("save01.data", ios::out|ios::binary);
-
-
-	if(FSM::current==&s1) {current_state=1;}
-	else if(FSM::current==&s2) {current_state=2;}
-	else if(FSM::current==&s3) {current_state=3;}
-	else if(FSM::current==&s4) {current_state=4;}
-	else if(FSM::current==&s5) {current_state=5;}
-	else if(FSM::current==&s7) {current_state=7;}
-	else {current_state=6;}
-	Bullet_num_time_count=Bullet::num_time_count;
-	
-	fwrite( &square,sizeof(struct Square),1,fp );
-	//fprintf(fp,"%c",'a');
-
-	fwrite( &ben.mod,sizeof(ben.mod) ,1,fp);
-	fwrite( &ben.pos_x,sizeof(ben.pos_x),1,fp );
-	fwrite( &ben.pos_y,sizeof(ben.pos_y),1,fp );
-	fwrite( &ben.judge_dir,sizeof(ben.judge_dir),1,fp );
-	fwrite( &ben.judge_hurt,sizeof(ben.judge_hurt),1,fp );
-	fwrite( &ben.line,sizeof(ben.line),1,fp );
-	fwrite( &ben.last_line,sizeof(ben.last_line) ,1,fp);
-	fwrite( &ben.special,sizeof(ben.special),1,fp );
-	fwrite( &ben.last_special,sizeof(ben.last_special) ,1,fp);
-	fwrite( &ben.num_bul,sizeof(ben.num_bul),1,fp );
-	fwrite( &ben.speed,sizeof(ben.speed),1,fp );
-	fwrite( &ben.life,sizeof(ben.life),1,fp );
-	fwrite( &ben.life_now,sizeof(ben.life_now),1,fp );
-	fwrite( &ben.print_chara,sizeof(ben.print_chara) ,1,fp);
-	fwrite( &ben.ski,sizeof(ben.ski),1,fp );
-	fwrite( &ben.cur,sizeof(ben.cur),1,fp );
-	fwrite( &ben.num_count,sizeof(ben.num_count),1,fp );
-	/*fprintf(fp,"%c",'b');
-
-	fwrite(&current_state, sizeof(current_state),1,fp );
-	fwrite(&judge_update, sizeof(judge_update),1,fp );
-	fwrite(&death_count, sizeof(death_count),1,fp );
-	fwrite(&Bullet_num_time_count, sizeof(Bullet_num_time_count) ,1,fp);
-	fwrite(&num_monster_fresh, sizeof(num_monster_fresh) ,1,fp);
-	fwrite(&room_count, sizeof(room_count),1,fp );
-	fwrite( &coin,sizeof(coin),1,fp );
-	fwrite( &flag,sizeof(flag) ,1,fp);
-	fwrite( &on_game,sizeof(on_game) ,1,fp);
-	fwrite( &jud_skin2,sizeof(jud_skin2),1,fp );
-	fwrite( &jud_skin3,sizeof(jud_skin3),1,fp );
-/*	fprintf(fp,"%c",'c');
-	
-	fwrite( &room,sizeof(struct Room),1,fp );
-	/*fprintf(fp,"%c",'d');
-
-	Bullet *bul=ben.head->nex;
-	for(int i=0; i<ben.num_bul; i++)
-	{
-		fwrite( bul,sizeof(struct Bullet),1,fp );
-		bul=bul->nex;
-	}
-	fclose(fp);
-	/*fprintf(fp,"%c",'e');
-	/*Encrypt_file("save02.data","save01.data");
-	ofstream te;
-	int t1=0;
-	te.open("save02.data", ios::out);
-	te.write(&t1, sizeof(t1) );
-	te.close();
-	return;
-}*/
 bool Game::read_data()
 {
 	fstream load_data,de_data;
-	de_data.open("save02.data",ios::in);
+	de_data.open("save.data",ios::in);
 	if(!de_data.is_open())
-		return false;
-	Decrypt_file("save02.data","save01.data");
+ 		return false;
 	de_data.close();
+	Decrypt_file("save.data","save01.data");
 	load_data.open("save01.data",ios::in);
-
 	
+	double assertNumber;
+	load_data>>assertNumber;
+	if( abs(assertNumber-468.750)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber0 "), _T(" assertNumber0 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
 	///////// Total DATA ///////////
+	for(int i=0; i<5; i++)
+		load_data>>ben.ski[i];
 	load_data>>current_state>>judge_update
 		>>death_count>>Bullet_num_time_count
 		>>num_monster_fresh>>
-		room_count>>coin>>flag>>on_game>>jud_skin2>>jud_skin3;
+		room_count>>coin>>flag>>jud_skin2>>jud_skin3;
+
+	load_data>>assertNumber;
+	if( abs(assertNumber-123.456)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber1 "), _T(" assertNumber1 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
 
 	///////// Square ////////////
 	load_data>>square.pos_x>>square.pos_y
 		>>square.angle>>square.init>>square.speed>>square.jud_way;
 	square.new_room_point(square.pos_x,square.pos_y,square.angle,square.pos);
+
+	load_data>>assertNumber;
+	if( abs(assertNumber-456.789)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber2 "), _T(" assertNumber2 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
+
 	//////// Room //////////
 	load_data>>room.num_stab>>room.num_stone
 		>>room.time_count>>room.rand_c>>room.time_max;
@@ -4319,12 +4218,12 @@ bool Game::read_data()
 		load_data>>room.stab[i].pos_x>>room.stab[i].pos_y
 			>>room.stab[i].count>>room.stab[i].init>>room.stab[i].judge_show
 			>>room.stab[i].count_max;
-		room.stab[i].new_point();
+		room.stab[i].fresh_point();
 	}
 	for(int i=0; i<10; i++)
 	{
 		load_data>>room.stone[i].pos_x>>room.stone[i].pos_y>>room.stab[i].init;
-		room.stone[i].new_point();
+		room.stone[i].fresh_point();
 	}
 	Monster *tt,*pre=room.monster;
 	int co;
@@ -4345,7 +4244,15 @@ bool Game::read_data()
 		}
 		pre->nex=NULL;
 	}
-	
+	load_data>>assertNumber;
+	if( abs(assertNumber-789.468)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber3 "), _T(" assertNumber3 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
 	///////// Charactor  //////////
 	load_data>>ben.mod>>ben.pos_x>>ben.pos_y
 		>>ben.judge_dir
@@ -4354,8 +4261,7 @@ bool Game::read_data()
 		>>ben.cur;
 	for(int i=0; i<10; i++)
 		load_data>>ben.num_count[i];
-	for(int i=0; i<5; i++)
-		load_data>>ben.ski[i];
+	
 	ben.new_point(ben.pos_x,ben.pos_y,ben.print_chara);
 
 	load_data>>ben.line.pos_x>>ben.line.pos_y>>ben.line.xita
@@ -4364,6 +4270,16 @@ bool Game::read_data()
 		>>ben.last_line.exist>>ben.last_line.life>>ben.last_line.special>>ben.last_line.cur;
 	load_data>>ben.special.pos_x>>ben.special.pos_y>>ben.special.xita
 		>>ben.special.exist>>ben.special.special>>ben.special.life>>ben.special.cur;
+
+	load_data>>assertNumber;
+	if( abs(assertNumber-147.258)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber4 "), _T(" assertNumber4 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
 
 	Bullet *bul_tem=new Bullet,*bul_pre=ben.head;
 	int num_store_bul=0;
@@ -4382,34 +4298,46 @@ bool Game::read_data()
 	bul_pre->nex=NULL;
 	ben.last=bul_pre;
 	
+	load_data>>assertNumber;
+	if( abs(assertNumber-468.123)>1e-6 )	
+	{
+		HWND wnd = GetHWnd();
+		MessageBox(wnd, _T(" wrong checknumber5 "), _T(" assertNumber5 "), MB_OK | MB_ICONWARNING);
+		load_data.close();
+		remove("save01.data");
+		exit(1);
+	}
 	///////// end ///////////////
 	load_data.close();
-	de_data.open("save01.data",ios::out|ios::trunc);
-	//de_data<<"111"<<endl;
-	de_data.close();
+	remove("save01.data");
 	return true;
 }
 void Game::write_data()
 {
-	fstream save_data,en_data;
+	fstream save_data;
 	save_data.open("save01.data",ios::out);
 	
-	if(FSM::current==&s1) {current_state=1;}
-	else if(FSM::current==&s2) {current_state=2;}
-	else if(FSM::current==&s3) {current_state=3;}
-	else if(FSM::current==&s4) {current_state=4;}
-	else if(FSM::current==&s5) {current_state=5;}
-	else if(FSM::current==&s7) {current_state=7;}
-	else {current_state=6;}
+	if( FSM::current==&s3 || FSM::current==&s4 ) { current_state=1; }
+	else {current_state=2;}
+	double assertnumber0=468.750;
+	double assertNumber1=123.456,assertNumber2=456.789,assertNumber3=789.468,assertNumber4=468.123;
+	
+	save_data<<assertnumber0<<endl;
 	///////// Total DATA ///////////
+	for(int i=0; i<5; i++)
+		save_data<<ben.ski[i]<<endl;
 	save_data<<current_state<<endl<<judge_update<<endl
 		<<death_count<<endl<<Bullet_num_time_count<<endl
-		<<endl<<num_monster_fresh<<endl<<
-		room_count<<endl<<coin<<endl<<flag<<endl<<on_game<<endl<<jud_skin2<<endl<<jud_skin3<<endl<<endl;
+		<<num_monster_fresh<<endl<<
+		room_count<<endl<<coin<<endl<<flag<<endl<<jud_skin2<<endl<<jud_skin3<<endl;
+	
+	save_data<<assertNumber1<<endl;
 
 	///////// Square ////////////
 	save_data<<square.pos_x<<endl<<square.pos_y<<endl
-		<<square.angle<<endl<<square.init<<endl<<square.speed<<endl<<square.jud_way<<endl<<endl;
+		<<square.angle<<endl<<square.init<<endl<<square.speed<<endl<<square.jud_way<<endl;
+
+	save_data<<assertNumber2<<endl;
 
 	//////// Room //////////
 	save_data<<room.num_stab<<endl<<room.num_stone<<endl
@@ -4422,7 +4350,7 @@ void Game::write_data()
 	}
 	for(int i=0; i<10; i++)
 		save_data<<room.stone[i].pos_x<<endl<<room.stone[i].pos_y<<endl<<room.stab[i].init<<endl;
-	Monster *tt=room.monster;
+	Monster *tt=room.monster->nex;
 	int co=0;
 	while(tt!=NULL)
 	{
@@ -4438,6 +4366,8 @@ void Game::write_data()
 			<<tt->special<<endl<<tt->exist<<endl<<tt->special<<endl;
 		tt=tt->nex;
 	}
+
+	save_data<<assertNumber3<<endl;
 	///////// Charactor  ////////////
 	save_data<<ben.mod<<endl<<ben.pos_x<<endl<<ben.pos_y<<endl
 		<<ben.judge_dir<<endl
@@ -4446,8 +4376,7 @@ void Game::write_data()
 		<<ben.cur<<endl;
 	for(int i=0; i<10; i++)
 		save_data<<ben.num_count[i]<<endl;
-	for(int i=0; i<5; i++)
-		save_data<<ben.ski[i]<<endl;
+	
 
 	save_data<<ben.line.pos_x<<endl<<ben.line.pos_y<<endl<<ben.line.xita<<endl
 		<<ben.line.exist<<endl<<ben.line.life<<endl<<ben.line.special<<endl<<ben.line.cur<<endl;
@@ -4456,7 +4385,9 @@ void Game::write_data()
 	save_data<<ben.special.pos_x<<endl<<ben.special.pos_y<<endl<<ben.special.xita<<endl
 		<<ben.special.exist<<endl<<ben.special.special<<endl<<ben.special.life<<endl<<ben.special.cur<<endl;
 
-	Bullet *tem=ben.head;
+	save_data<<147.258<<endl;
+
+	Bullet *tem=ben.head->nex;
 	int num_store_bul=0;
 	while(tem!=NULL)
 	{
@@ -4472,12 +4403,11 @@ void Game::write_data()
 		<<tem->life<<endl<<tem->cur<<endl;
 		tem=tem->nex;
 	}
+	save_data<<assertNumber4<<endl;
 	///////// end ///////////////
 	save_data.close();
-	Encrypt_file("save01.data","save02.data");
-	en_data.open("save01.data",ios::out|ios::trunc);
-	//en_data<<"222"<<endl;
-	en_data.close();
+	Encrypt_file("save01.data","save.data");
+	remove("save01.data");
 	return;
 }
 
@@ -4506,7 +4436,8 @@ void FSM::change(int n)
 
 ///////  DES ///////
 
-int k[64]={
+int k[64]=
+{
 	0,0,0,0,1,0,1,0,
 	0,0,1,0,1,0,0,1,
 	1,0,1,0,1,1,1,0,
@@ -4536,6 +4467,7 @@ int IP_1[] ={39,7,47,15,55,23,63,31,
 			   34,2,42,10,50,18,58,26,  
 	         33,1,41,9,49,17,57,25,  
 	         32,0,40,8,48,16,56,24}; 
+
 // 密钥置换表，将64位密钥变成56位  
 int PC_1[] = {56,48,40,32,24,16,8,  
               0,57,49,41,33,25,17,  
@@ -4745,6 +4677,7 @@ void encrypt(char *s, char *ans)  //  s明文   ans 密文
 }
 void decrypt(char *s, char *ans) //  s密文   ans 明文
 {
+	initkey();
 	int ans1[64];
 	for(int i=0; i<8; i++)
 	{
@@ -4793,7 +4726,7 @@ void decrypt(char *s, char *ans) //  s密文   ans 明文
 int Encrypt_file(char *s_name,char *ans_name)
 {  
     FILE *s,*ans;  
-    int c;  
+    int c;
     char s1[8],s2[8];  
 	s = fopen(s_name,"rb");
 	ans = fopen(ans_name,"wb");
