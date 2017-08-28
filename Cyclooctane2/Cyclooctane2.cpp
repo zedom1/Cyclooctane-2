@@ -1031,20 +1031,25 @@ void Game::updateWithInput()
 			{
 				if(ben.last!=ben.head)
 				{
-					Bullet *bul=ben.head->nex,*aft_bul=bul;
-					while(bul!=NULL)
+					Bullet *bul=ben.head->nex,*pre_bul=ben.head;
+					while(ben.head->nex!=NULL)
 					{
-						aft_bul=bul;
-						while(aft_bul->nex!=NULL)
-							aft_bul=aft_bul->nex;
-						aft_bul->exist=false;
-						aft_bul->print_bul_old(aft_bul->pos_x,aft_bul->pos_y);
-						delete aft_bul;
+						pre_bul=ben.head;
+						bul=ben.head->nex;
+						while(bul->nex!=NULL)
+						{	
+							bul=bul->nex;
+							pre_bul=pre_bul->nex;
+						}
+						bul->exist=false;
+						bul->print_bul_old(bul->pos_x,bul->pos_y);
+						delete bul;
+						pre_bul->nex=NULL;
 					}
 				}
 				if(ben.head->nex==NULL)
 				{	
-					ben.head=ben.last;
+					ben.last=ben.head;
 					ben.last->nex=NULL;
 				}
 			}
@@ -1088,6 +1093,7 @@ void Game::updateWithInput()
 				ben.special.r=20;
 				ben.special.exist=true;
 				ben.special.special=true;
+				ben.special.speed[ben.special.cur]=22;
 			}
 			ben.print_part_cha_new(ben.pos_x,ben.pos_y,ben.print_chara);
 		}
@@ -1147,7 +1153,7 @@ void Game::judge_bullet(int start, int end, POINT pos[], double x, double y, dou
 		}
 	}
 }
-bool Game::judge_coll_chara_to_wall()
+void Game::judge_coll_chara_to_wall()
 {
 	Vector shadow;
 	double num_move=0;
@@ -1191,7 +1197,7 @@ bool Game::judge_coll_chara_to_wall()
 		flag=1;
 	//	return true;
 	}
-	return flag==1;
+	return;
 }
 void Game::judge_coll_mon_to_wall()
 {
@@ -1609,6 +1615,7 @@ void Game::bomb_hurt(int mod)
 				pre->nex=tt->nex;
 				delete tt;
 				tt=pre->nex;
+				continue;
 			}
 			tt=tt->nex;
 			pre=pre->nex;
@@ -4175,6 +4182,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber0 "), _T(" assertNumber0 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 	///////// Total DATA ///////////
@@ -4192,6 +4200,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber1 "), _T(" assertNumber1 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 
@@ -4207,6 +4216,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber2 "), _T(" assertNumber2 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 
@@ -4251,6 +4261,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber3 "), _T(" assertNumber3 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 	///////// Charactor  //////////
@@ -4278,6 +4289,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber4 "), _T(" assertNumber4 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 
@@ -4305,6 +4317,7 @@ bool Game::read_data()
 		MessageBox(wnd, _T(" wrong checknumber5 "), _T(" assertNumber5 "), MB_OK | MB_ICONWARNING);
 		load_data.close();
 		remove("save01.data");
+		remove("save.data");
 		exit(1);
 	}
 	///////// end ///////////////
@@ -4416,23 +4429,6 @@ void FSM::reset()
 {  
     current = &s1;  
 }
-void FSM::change(int n)
-{
-	switch(n)
-	{
-	case 1: current = &s1;  break;
-	case 2: current = &s2;  break;
-	case 4: current = &s4;  break;
-	case 5: current = &s5;  break;
-	case 6: current = &s6;  break;
-	case 7: current = &s7;  break;
-	case 8: current = &s8;  break;
-	case 9: current = &s9;  break;
-	default :current = &s3;  break;
-	}
-	return;
-}
-
 
 ///////  DES ///////
 

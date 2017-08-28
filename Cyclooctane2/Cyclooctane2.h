@@ -251,8 +251,8 @@ public:
 	static void clear();         // 清屏
 	void judge_bullet(int start, int end, POINT pos[], double x, double y, double &xita); //子弹反弹
 	void update_bullet();        // 子弹更新、杀敌
-	bool judge_coll_chara_to_wall();
 	void print_new();
+	void judge_coll_chara_to_wall();
 	void judge_coll_mon_to_wall();
 	void judge_coll_cha_to_mon();
 	void judge_coll_mon_to_mon();
@@ -338,10 +338,10 @@ struct FSM
 {  	
 public:  
 	static void reset();  
-	static void change(int n);
 	static State *current;
 };
 
+void initi();  // 窗体初始化
 int normalize_x(double x);    // 找到坐标所在方格的中心点x坐标
 int normalize_y(double y);    // 找到坐标所在方格的中心点y坐标
 int get_i(double x);          // 该中心对应mapp的i值
@@ -350,11 +350,10 @@ int get_x_from_i(int i);      // 根据i求得方格中心点x坐标
 int get_y_from_j(int j);      // 根据i求得方格中心点x坐标
 void quicksort(int first, int last , Node* a);
 bool judge_coll_line(POINT a , POINT b, POINT c, POINT d, POINT &cut);  // 线段相交判定并求交点（若有）
-void initi();  // 窗体初始化
 double point_to_line(POINT a, POINT head, POINT last); // 点到线段距离
+bool judge_p_left_right(POINT a, POINT line1, POINT line2);  // 判断点在向量的左右端
 bool judge_coll_single(POINT first[], int num_first, POINT second[], int num_second, Vector &shadow, double& num_move);  // 碰撞检测
 bool judge_circle_coll(Vector circle_up, Vector circle_down,POINT second[],int num_second);
-bool judge_p_left_right(POINT a, POINT line1, POINT line2);
 int Encrypt_file(char *s_name,char *ans_name);
 int Decrypt_file(char *s_name, char *ans_name);
 
