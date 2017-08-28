@@ -385,7 +385,7 @@ Vector Vector::new_normalize()
 double Vector::dotmulti(Vector a)
 {
 	return a.x*x+a.y*y;
-}
+} 
 Vector& Vector::operator = (Vector a)
 {
 	x=a.x; y=a.y;
