@@ -3187,9 +3187,6 @@ State* MENU_CHA::transition(int x)
 }  
 void MENU_CHA::eventt()
 {
-	/////////////////////////////////////
-	cyclooctane.coin=999;
-	////////////////////////////////////
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_ben=L"Benzene";
 	LPCTSTR str_cyc=L"Cyclohexadiene";
@@ -3754,10 +3751,6 @@ State* SHOP1::transition(int x)
 }  
 void SHOP1::eventt()
 {
-	////////////////////////////////////////
-	cyclooctane.death_count=9999;
-	////////////////////////////////////////
-
 	BeginBatchDraw();
 	settextstyle(80,40,_T("方正姚体"));  settextcolor(RGB(255,255,255));
 	LPCTSTR str_title=L"Update";
